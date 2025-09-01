@@ -15,7 +15,7 @@ Getting Apache ant
 ------------------
    You can get the binaries from http://ant.apache.org/bindownload.cgi
    Unarchive the binaries:
-     tar -cvzf apache-ant-X.Y.Z-bin.tar.gz
+     tar -xf apache-ant-X.Y.Z-bin.tar.gz
    Export the path to the binary
      export PATH=${PATH}:/ant-X.Y.Z/bin 
 

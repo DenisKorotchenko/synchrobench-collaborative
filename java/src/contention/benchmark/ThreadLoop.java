@@ -115,7 +115,8 @@ public class ThreadLoop implements Runnable {
 
 			} else if (coin < cdf[2]) { // 3. should we run a readAll operation?
 
-				bench.size();
+				bench.range(newInt, rand.nextInt(Parameters.range));
+//				bench.size();
 				numSize++;
 
 			} else { // 4. then we should run a readSome operation

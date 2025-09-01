@@ -603,7 +603,7 @@ public class Test {
 			//if (Parameters.numWriteAlls == 0) System.out.println("  Expected size:           \t" + (Parameters.size+numAdd-numRemove));
 			break;
 		}
-		System.out.println("  Final size:              \t" + sortedBench.size());
+		System.out.println("  Final size:              \t" + s);
 		assert s == (Parameters.size+numAdd-numRemove) : "Final size does not reflect the modifications.";
 		
 		//System.out.println("  Other size:              \t" + map.size());

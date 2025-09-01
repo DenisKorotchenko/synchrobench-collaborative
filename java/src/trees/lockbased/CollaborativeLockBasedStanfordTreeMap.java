@@ -39,13 +39,14 @@
 
 package trees.lockbased;
 
+import collaborative.CollaborativeQueue;
+import collaborative.CollaborativeTask;
 import contention.abstractions.CompositionalMap;
 
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 /**
  * A concurrent relaxed balance AVL tree, based on the algorithm of Bronson,
@@ -62,38 +63,12 @@ import java.util.function.Supplier;
  *
  * @author Nathan Bronson
  */
-public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
+public class CollaborativeLockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V> {
-	private final ReadWriteLock toAllLock = new ReentrantReadWriteLock();
+	private final ReadWriteLock collaborativeLock = new ReentrantReadWriteLock();
+	private final CollaborativeQueue<CollaborativeTask> collaborativeQueue = new CollaborativeQueue<>();
+	private final int MAX_LEVEL = 2;
 
-	private <T> T withAllLock(Supplier<T> function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					return function.get();
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
-	}
-
-	private void withAllLock(Runnable function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					function.run();
-					return;
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
-	}
 	// public class OptTreeMap<K,V> extends AbstractMap<K,V> implements
 	// ConcurrentMap<K,V> {
 
@@ -108,11 +83,15 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	 */
 	static final Object SpecialRetry = new Object();
 
-	/** The number of spins before yielding. */
+	/**
+	 * The number of spins before yielding.
+	 */
 	static final int SpinCount = Integer.parseInt(System.getProperty("spin",
 			"100"));
 
-	/** The number of yields before blocking. */
+	/**
+	 * The number of yields before blocking.
+	 */
 	static final int YieldCount = Integer.parseInt(System.getProperty("yield",
 			"0"));
 
@@ -188,12 +167,12 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private static boolean hasShrunkOrUnlinked(final long orig,
-			final long current) {
+											   final long current) {
 		return ((orig ^ current) & ~(OVLGrowLockMask | OVLGrowCountMask)) != 0;
 	}
 
 	private static boolean hasChangedOrUnlinked(final long orig,
-			final long current) {
+												final long current) {
 		return orig != current;
 	}
 
@@ -213,8 +192,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		volatile boolean changeLock;
 
 		Node(final K key, final int height, final Object vOpt,
-				final Node<K, V> parent, final long changeOVL,
-				final Node<K, V> left, final Node<K, V> right) {
+			 final Node<K, V> parent, final long changeOVL,
+			 final Node<K, V> left, final Node<K, V> right) {
 			this.key = key;
 			this.height = height;
 			this.vOpt = vOpt;
@@ -303,10 +282,10 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	// ////////////// public interface
 
-	public LockBasedStanfordTreeMap() {
+	public CollaborativeLockBasedStanfordTreeMap() {
 	}
 
-	public LockBasedStanfordTreeMap(final Comparator<? super K> comparator) {
+	public CollaborativeLockBasedStanfordTreeMap(final Comparator<? super K> comparator) {
 		this.comparator = comparator;
 	}
 
@@ -330,7 +309,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	@Override
 	public void clear() {
-		withAllLock(() -> {
+		collaborativeQueue.lockWithHelpIfNeeded(collaborativeLock.readLock(), () -> {
 			synchronized (rootHolder) {
 				rootHolder.height = 1;
 				rootHolder.right = null;
@@ -383,7 +362,9 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		vars.nodesTraversed += nodesTraversed;
 	}
 
-	/** Returns either a value or SpecialNull, if present, or null, if absent. */
+	/**
+	 * Returns either a value or SpecialNull, if present, or null, if absent.
+	 */
 	private Object getImpl(final Object key) {
 		final Comparable<? super K> k = comparable(key);
 
@@ -431,7 +412,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Object attemptGet(final Comparable<? super K> k,
-			final Node<K, V> node, final char dirToC, final long nodeOVL) {
+							  final Node<K, V> node, final char dirToC, final long nodeOVL) {
 		int nodesTraversed = 0;
 		while (true) {
 			final Node<K, V> child = node.child(dirToC);
@@ -538,7 +519,9 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		return (SimpleImmutableEntry<K, V>) extreme(ReturnEntry, Right);
 	}
 
-	/** Returns a key if returnKey is true, a SimpleImmutableEntry otherwise. */
+	/**
+	 * Returns a key if returnKey is true, a SimpleImmutableEntry otherwise.
+	 */
 	private Object extreme(final int returnType, final char dir) {
 		while (true) {
 			final Node<K, V> right = rootHolder.right;
@@ -568,7 +551,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Object attemptExtreme(final int returnType, final char dir,
-			final Node<K, V> node, final long nodeOVL) {
+								  final Node<K, V> node, final long nodeOVL) {
 		while (true) {
 			final Node<K, V> child = node.child(dir);
 
@@ -585,13 +568,13 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 				assert (vo != null);
 
 				switch (returnType) {
-				case ReturnKey:
-					return node.key;
-				case ReturnEntry:
-					return new SimpleImmutableEntry<K, V>(node.key,
-							decodeNull(vo));
-				default:
-					return node;
+					case ReturnKey:
+						return node.key;
+					case ReturnEntry:
+						return new SimpleImmutableEntry<K, V>(node.key,
+								decodeNull(vo));
+					default:
+						return node;
 				}
 			} else {
 				// child is non-null
@@ -633,16 +616,16 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	private static final int UpdateIfEq = 3;
 
 	private static boolean shouldUpdate(final int func, final Object prev,
-			final Object expected) {
+										final Object expected) {
 		switch (func) {
-		case UpdateAlways:
-			return true;
-		case UpdateIfAbsent:
-			return prev == null;
-		case UpdateIfPresent:
-			return prev != null;
-		default:
-			return prev == expected; // TODO: use .equals
+			case UpdateAlways:
+				return true;
+			case UpdateIfAbsent:
+				return prev == null;
+			case UpdateIfPresent:
+				return prev != null;
+			default:
+				return prev == expected; // TODO: use .equals
 		}
 	}
 
@@ -679,8 +662,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	@SuppressWarnings("unchecked")
 	private Object update(final Object key, final int func,
-			final Object expected, final Object newValue) {
-		return withAllLock(() -> {
+						  final Object expected, final Object newValue) {
+		return collaborativeQueue.lockWithHelpIfNeeded(collaborativeLock.readLock(), () -> {
 			final Comparable<? super K> k = comparable(key);
 
 			while (true) {
@@ -733,9 +716,9 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	 */
 	@SuppressWarnings("unchecked")
 	private Object attemptUpdate(final Object key,
-			final Comparable<? super K> k, final int func,
-			final Object expected, final Object newValue,
-			final Node<K, V> parent, final Node<K, V> node, final long nodeOVL) {
+								 final Comparable<? super K> k, final int func,
+								 final Object expected, final Object newValue,
+								 final Node<K, V> parent, final Node<K, V> node, final long nodeOVL) {
 		// As the search progresses there is an implicit min and max assumed for
 		// the
 		// branch of the tree rooted at node. A left rotation of a node x
@@ -749,10 +732,11 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		// A rotation of node can't screw us up once we have traversed to node's
 		// child, so we don't need to build a huge transaction, just a chain of
 		// smaller read-only transactions.
-
 		while (!node.changeLock) {
+			collaborativeQueue.helpIfNeeded();
 			Thread.yield();
 		}
+
 		assert (nodeOVL != UnlinkedOVL);
 
 		final int cmp = k.compareTo(node.key);
@@ -856,8 +840,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	 * stale.
 	 */
 	private Object attemptNodeUpdate(final int func, final Object expected,
-			final Object newValue, final Node<K, V> parent,
-			final Node<K, V> node) {
+									 final Object newValue, final Node<K, V> parent,
+									 final Node<K, V> node) {
 		if (newValue == null) {
 			// removal
 			if (node.vOpt == null) {
@@ -916,9 +900,11 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		}
 	}
 
-	/** Does not adjust the size or any heights. */
+	/**
+	 * Does not adjust the size or any heights.
+	 */
 	private boolean attemptUnlink_nl(final Node<K, V> parent,
-			final Node<K, V> node) {
+									 final Node<K, V> node) {
 		// assert (Thread.holdsLock(parent));
 		// assert (Thread.holdsLock(node));
 		assert (!isUnlinked(parent.changeOVL));
@@ -967,7 +953,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Entry<K, V> pollExtremeEntry(final char dir) {
-		return withAllLock(() -> {
+		return collaborativeQueue.lockWithHelpIfNeeded(collaborativeLock.readLock(), () -> {
 			while (true) {
 				final Node<K, V> right = rootHolder.right;
 				if (right == null) {
@@ -992,9 +978,11 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		});
 	}
 
-	/** Optimistic failure is returned as null. */
+	/**
+	 * Optimistic failure is returned as null.
+	 */
 	private Entry<K, V> attemptRemoveExtreme(final char dir,
-			final Node<K, V> parent, final Node<K, V> node, final long nodeOVL) {
+											 final Node<K, V> parent, final Node<K, V> node, final long nodeOVL) {
 		assert (nodeOVL != UnlinkedOVL);
 
 		while (true) {
@@ -1123,17 +1111,17 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	private Node<K, V> fixHeight_nl(final Node<K, V> node) {
 		final int c = nodeCondition(node);
 		switch (c) {
-		case RebalanceRequired:
-		case UnlinkRequired:
-			// can't repair
-			return node;
-		case NothingRequired:
-			// Any future damage to this node is not our responsibility.
-			return null;
-		default:
-			node.height = c;
-			// we've damaged our parent, but we can't fix it now
-			return node.parent;
+			case RebalanceRequired:
+			case UnlinkRequired:
+				// can't repair
+				return node;
+			case NothingRequired:
+				// Any future damage to this node is not our responsibility.
+				return null;
+			default:
+				node.height = c;
+				// we've damaged our parent, but we can't fix it now
+				return node.parent;
 		}
 	}
 
@@ -1181,7 +1169,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rebalanceToRight_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final Node<K, V> nL, final int hR0) {
+										   final Node<K, V> n, final Node<K, V> nL, final int hR0) {
 		// L is too large, we will rotate-right. If L.R is taller
 		// than L.L, then we will first rotate-left L.
 		synchronized (nL) {
@@ -1231,7 +1219,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rebalanceToLeft_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final Node<K, V> nR, final int hL0) {
+										  final Node<K, V> n, final Node<K, V> nR, final int hL0) {
 		synchronized (nR) {
 			final int hR = nR.height;
 			if (hL0 - hR >= -1) {
@@ -1264,8 +1252,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rotateRight_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final Node<K, V> nL, final int hR,
-			final int hLL, final Node<K, V> nLR, final int hLR) {
+									  final Node<K, V> n, final Node<K, V> nL, final int hR,
+									  final int hLL, final Node<K, V> nLR, final int hLR) {
 		final long nodeOVL = n.changeOVL;
 		final long leftOVL = nL.changeOVL;
 
@@ -1331,8 +1319,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rotateLeft_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final int hL, final Node<K, V> nR,
-			final Node<K, V> nRL, final int hRL, final int hRR) {
+									 final Node<K, V> n, final int hL, final Node<K, V> nR,
+									 final Node<K, V> nRL, final int hRL, final int hRR) {
 		final long nodeOVL = n.changeOVL;
 		final long rightOVL = nR.changeOVL;
 
@@ -1380,8 +1368,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rotateRightOverLeft_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final Node<K, V> nL, final int hR,
-			final int hLL, final Node<K, V> nLR, final int hLRL) {
+											  final Node<K, V> n, final Node<K, V> nL, final int hR,
+											  final int hLL, final Node<K, V> nLR, final int hLRL) {
 		final long nodeOVL = n.changeOVL;
 		final long leftOVL = nL.changeOVL;
 		final long leftROVL = nLR.changeOVL;
@@ -1457,8 +1445,8 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Node<K, V> rotateLeftOverRight_nl(final Node<K, V> nParent,
-			final Node<K, V> n, final int hL, final Node<K, V> nR,
-			final Node<K, V> nRL, final int hRR, final int hRLR) {
+											  final Node<K, V> n, final int hL, final Node<K, V> nR,
+											  final Node<K, V> nRL, final int hRR, final int hRLR) {
 		final long nodeOVL = n.changeOVL;
 		final long rightOVL = nR.changeOVL;
 		final long rightLOVL = nRL.changeOVL;
@@ -1526,7 +1514,9 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		return (Node<K, V>) extreme(ReturnNode, Left);
 	}
 
-	/** Returns the successor to a node, or null if no successor exists. */
+	/**
+	 * Returns the successor to a node, or null if no successor exists.
+	 */
 	@SuppressWarnings("unchecked")
 	private Node<K, V> succ(final Node<K, V> node) {
 		while (true) {
@@ -1630,7 +1620,9 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		}
 	}
 
-	/** Returns the successor to an unlinked node. */
+	/**
+	 * Returns the successor to an unlinked node.
+	 */
 	private Object succOfUnlinked(final Node<K, V> node) {
 		return succNode(node.key);
 	}
@@ -1662,7 +1654,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Object succNode(final Comparable<? super K> keyCmp,
-			final Node<K, V> node, final long nodeOVL) {
+							final Node<K, V> node, final long nodeOVL) {
 		while (true) {
 			final int cmp = keyCmp.compareTo(node.key);
 
@@ -1752,17 +1744,17 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 		@Override
 		public int size() {
-			return LockBasedStanfordTreeMap.this.size();
+			return CollaborativeLockBasedStanfordTreeMap.this.size();
 		}
 
 		@Override
 		public boolean isEmpty() {
-			return LockBasedStanfordTreeMap.this.isEmpty();
+			return CollaborativeLockBasedStanfordTreeMap.this.isEmpty();
 		}
 
 		@Override
 		public void clear() {
-			LockBasedStanfordTreeMap.this.clear();
+			CollaborativeLockBasedStanfordTreeMap.this.clear();
 		}
 
 		@Override
@@ -1772,7 +1764,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			final Object k = ((Entry<?, ?>) o).getKey();
 			final Object v = ((Entry<?, ?>) o).getValue();
-			final Object actualVo = LockBasedStanfordTreeMap.this.getImpl(k);
+			final Object actualVo = CollaborativeLockBasedStanfordTreeMap.this.getImpl(k);
 			if (actualVo == null) {
 				// no associated value
 				return false;
@@ -1794,7 +1786,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			final Object k = ((Entry<?, ?>) o).getKey();
 			final Object v = ((Entry<?, ?>) o).getValue();
-			return LockBasedStanfordTreeMap.this.remove(k, v);
+			return CollaborativeLockBasedStanfordTreeMap.this.remove(k, v);
 		}
 
 		@Override
@@ -1844,46 +1836,162 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 		@Override
 		public void remove() {
-			LockBasedStanfordTreeMap.this.remove(mostRecentNode.key);
+			CollaborativeLockBasedStanfordTreeMap.this.remove(mostRecentNode.key);
 		}
 	}
 
 
+	private class SnapshotToPartialCollaborativeTask implements CollaborativeTask {
+		private final Node<K, V> root;
+		private final ArrayList<Entry<K, V>> partialSnapshot;
 
-	public ArrayList<Entry<K, V>> snapshot() {
-		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
+		SnapshotToPartialCollaborativeTask(
+				Node<K, V> root,
+				ArrayList<Entry<K, V>> partialSnapshot
+		) {
+			this.root = root;
+			this.partialSnapshot = partialSnapshot;
+		}
+
+		@Override
+		public void start() {
+			Queue<Node<K, V>> q = new ArrayDeque<>();
+			q.add(root);
+			while (!q.isEmpty()) {
 				try {
-					ArrayList<Entry<K, V>> result = new ArrayList<>();
-					Queue<Node<K, V>> q = new ArrayDeque<>();
-					q.add(rootHolder);
-					while (!q.isEmpty()) {
+					var current = q.poll();
+					if (!(current.vOpt == SpecialNull || current.vOpt == null)) {
 						try {
-							var current = q.poll();
-							if (!(current.vOpt == SpecialNull || current.vOpt == null)) {
-								try {
-									result.add(new SimpleImmutableEntry<K, V>(current.key, (V) current.vOpt));
-								} catch (Throwable ignored) {
-								}
-							}
-							var left = current.left;
-							if (left != null) {
-								q.add(left);
-							}
-							var right = current.right;
-							if (right != null) {
-								q.add(right);
-							}
+							partialSnapshot.add(new SimpleImmutableEntry<K, V>(current.key, (V) current.vOpt));
 						} catch (Throwable ignored) {
 						}
 					}
-					return result;
-				} finally {
-					toAllLock.writeLock().unlock();
+					var left = current.left;
+					if (left != null) {
+						q.add(left);
+					}
+					var right = current.right;
+					if (right != null) {
+						q.add(right);
+					}
+				} catch (Throwable ignored) {
 				}
+			}
+		}
+	}
+
+	public ArrayList<Entry<K, V>> snapshot() {
+		while (true) {
+			if (collaborativeLock.writeLock().tryLock()) {
+				ArrayList<ArrayList<Entry<K, V>>> partialSnapshots = new ArrayList<>();
+				ArrayList<Entry<K, V>> snapshot = new ArrayList<>();
+				try {
+					Deque<Pair<Integer, Node<K, V>>> q = new ArrayDeque<>();
+					q.push(new Pair(0, rootHolder));
+					int index = 0;
+					for (int i = 0; i < Math.pow(2, MAX_LEVEL); i++) {
+						partialSnapshots.add(new ArrayList<>());
+					}
+					while (!q.isEmpty()) {
+						var p = q.poll();
+						if (p.getSecond() == null) {
+							continue;
+						}
+						if (p.getFirst() >= MAX_LEVEL) {
+							var task = new SnapshotToPartialCollaborativeTask(
+									p.getSecond(),
+									partialSnapshots.get(index++)
+							);
+							collaborativeQueue.add(task);
+							continue;
+						}
+						var val = p.getSecond().vOpt;
+						if (val != null && val != SpecialNull) {
+							snapshot.add(new SimpleImmutableEntry<>(p.getSecond().key, (V) val));
+						}
+						q.push(new Pair<>(p.getFirst() + 1, p.getSecond().left));
+						q.push(new Pair<>(p.getFirst() + 1, p.getSecond().right));
+					}
+					collaborativeQueue.helpIfNeeded();
+					collaborativeQueue.waitForFinish();
+				} finally {
+					collaborativeLock.writeLock().unlock();
+				}
+				for (var partialSnapshot : partialSnapshots) {
+					snapshot.addAll(partialSnapshot);
+				}
+				return snapshot;
 			} else {
+				collaborativeQueue.helpIfNeeded();
 				Thread.yield();
 			}
+		}
+	}
+
+	private class ReduceCollaborativeTask implements CollaborativeTask {
+		V value;
+		BiFunction<V, V, V> function;
+		ArrayList<V> results;
+		int resultIndex;
+		Node<K, V> root;
+
+		ReduceCollaborativeTask(
+				V start,
+				BiFunction<V, V, V> function,
+				ArrayList<V> results,
+				int resultIndex,
+				Node<K, V> root
+		) {
+			this.value = start;
+			this.function = function;
+			this.results = results;
+			this.resultIndex = resultIndex;
+			this.root = root;
+		}
+
+		@Override
+		public void start() {
+			Queue<Node<K, V>> q = new ArrayDeque<>();
+			if (root != null) {
+				q.add(root);
+			}
+			while (!q.isEmpty()) {
+				var p = q.poll();
+				if (p == null) {
+					continue;
+				}
+				if (p.vOpt != null && p.vOpt != SpecialNull) {
+					value = function.apply(value, (V) p.vOpt);
+				}
+				if (p.left != null) {
+					q.add(p.left);
+				}
+				if (p.right != null) {
+					q.add(p.right);
+				}
+			}
+			results.set(resultIndex, value);
+		}
+	}
+
+	private static class Pair<F, S> {
+		F first;
+		S second;
+
+		Pair(
+				F first,
+				S second
+		) {
+			this.first = first;
+			this.second = second;
+		}
+
+		public F getFirst() {
+			return first;
+		}
+
+		public S getSecond() {
+			return second;
 		}
 	}
 
@@ -1892,37 +2000,176 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			BiFunction<V, V, V> function
 	) {
 		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
+			if (collaborativeLock.writeLock().tryLock()) {
+				V res = start;
+				ArrayList<V> results = new ArrayList<>();
 				try {
-					V res = start;
-					Deque<Node<K, V>> q = new ArrayDeque<>();
-					if (rootHolder != null) {
-						q.push(rootHolder);
+					Deque<Pair<Integer, Node<K, V>>> q = new ArrayDeque<>();
+					q.push(new Pair(0, rootHolder));
+					int index = 0;
+					for (int i = 0; i < Math.pow(2, MAX_LEVEL); i++) {
+						results.add(start);
 					}
 					while (!q.isEmpty()) {
 						var p = q.poll();
-						if (p == null) {
+						if (p.getSecond() == null) {
 							continue;
 						}
-						if (p.vOpt != null && p.vOpt != SpecialNull) {
-							res = function.apply(res, (V) p.vOpt);
+						if (p.getFirst() >= MAX_LEVEL) {
+							var task = new ReduceCollaborativeTask(
+									start,
+									function,
+									results,
+									index++,
+									p.getSecond()
+							);
+							collaborativeQueue.add(task);
+							continue;
 						}
-						if (p.left != null) {
-							q.push(p.left);
+						if (p.getSecond().vOpt != null && p.getSecond().vOpt != SpecialNull) {
+							res = function.apply(res, (V) p.getSecond().vOpt);
 						}
-						if (p.right != null) {
-							q.push(p.right);
-						}
+						q.push(new Pair<>(p.getFirst() + 1, p.getSecond().left));
+						q.push(new Pair<>(p.getFirst() + 1, p.getSecond().right));
 					}
-					return res;
+					collaborativeQueue.helpIfNeeded();
+					collaborativeQueue.waitForFinish();
 				} finally {
-					toAllLock.writeLock().unlock();
+					collaborativeLock.writeLock().unlock();
 				}
+				for (var el : results) {
+					res = function.apply(res, el);
+				}
+				return res;
 			} else {
+				collaborativeQueue.helpIfNeeded();
 				Thread.yield();
 			}
 		}
 	}
+
+	//	public V rangeQuery(
+//			K left,
+//			K right,
+//			V start,
+//			BiFunction<V, V, V> func
+//	) {
+//		final Comparable<? super K> leftK = comparable(left);
+//		final Comparable<? super K> rightK = comparable(right);
+//
+//		final List<Node<K, V>> nodesFullIn = new LinkedList<>();
+//
+//		collaborativeLock.writeLock().lock();
+//		var cur = rootHolder.right;
+//		var result = start;
+//		try {
+//			if (left.equals(12) && right.equals(14)) {
+//				left = left;
+//			}
+//
+//			while (cur != null && cur.key != null) {
+//				while (!cur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (rightK.compareTo(cur.key) < 0) {
+//					cur = cur.left;
+//				} else if (leftK.compareTo(cur.key) > 0) {
+//					cur = cur.right;
+//				} else {
+//					break;
+//				}
+//			}
+//			if (cur == null) {
+//				return start;
+//			}
+//			var v = (V) cur.vOpt;
+//			if (v != null) {
+//				result = func.apply(result, v);
+//			}
+//			var leftCur = cur.left;
+//			while (leftCur != null && leftCur.key != null) {
+//				while (!leftCur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (leftK.compareTo(leftCur.key) == 0) {
+//					nodesFullIn.add(leftCur.right);
+//					v = (V) leftCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					break;
+//				}
+//				if (leftK.compareTo(leftCur.key) < 0) {
+//					nodesFullIn.add(leftCur.right);
+//					v = (V) leftCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					leftCur = leftCur.left;
+//				} else {
+//					leftCur = leftCur.right;
+//				}
+//			}
+//			var rightCur = cur.right;
+//			while (rightCur != null && rightCur.key != null) {
+//				while (!rightCur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (rightK.compareTo(rightCur.key) == 0) {
+//					nodesFullIn.add(rightCur.left);
+//					v = (V) rightCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					break;
+//				}
+//				if (rightK.compareTo(rightCur.key) > 0) {
+//					nodesFullIn.add(rightCur.left);
+//					v = (V) rightCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					rightCur = rightCur.right;
+//				} else {
+//					rightCur = rightCur.left;
+//				}
+//			}
+//
+//			for (var tV: nodesFullIn) {
+//				if (tV != null) {
+//					tV.changeLock = false;
+//				}
+//			}
+//		} finally {
+//			collaborativeLock.writeLock().unlock();
+//		}
+//
+//		Queue<Node<K, V>> q = new ArrayDeque<>();
+//		for (var node: nodesFullIn) {
+//			if (node != null) {
+//				q.add(node);
+//			}
+//		}
+//
+//		while (!q.isEmpty()) {
+//			Node<K, V> node = q.poll();
+//			result = func.apply(result, (V) node.vOpt);
+//			if (node.left != null) {
+//				q.add(node.left);
+//			}
+//			if (node.right != null) {
+//				q.add(node.right);
+//			}
+//		}
+//
+//		for (var node: nodesFullIn) {
+//			if (node != null) {
+//				node.changeLock = true;
+//			}
+//		}
+//
+//		return result;
+//	}
 
 	public V rangeQuery(
 			K left,
@@ -1935,14 +2182,17 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 		final List<Node<K, V>> nodesFullIn = new LinkedList<>();
 
-		while (!toAllLock.writeLock().tryLock()) {
-            Thread.yield();
-        }
+		collaborativeLock.writeLock().lock();
 		var cur = rootHolder.right;
 		var result = start;
 		try {
+			if (left.equals(12) && right.equals(14)) {
+				left = left;
+			}
+
 			while (cur != null && cur.key != null) {
 				while (!cur.changeLock) {
+					collaborativeQueue.helpIfNeeded();
 					Thread.yield();
 				}
 				if (rightK.compareTo(cur.key) < 0) {
@@ -1963,6 +2213,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			var leftCur = cur.left;
 			while (leftCur != null && leftCur.key != null) {
 				while (!leftCur.changeLock) {
+					collaborativeQueue.helpIfNeeded();
 					Thread.yield();
 				}
 				if (leftK.compareTo(leftCur.key) == 0) {
@@ -1987,6 +2238,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			var rightCur = cur.right;
 			while (rightCur != null && rightCur.key != null) {
 				while (!rightCur.changeLock) {
+					collaborativeQueue.helpIfNeeded();
 					Thread.yield();
 				}
 				if (rightK.compareTo(rightCur.key) == 0) {
@@ -2015,30 +2267,39 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 				}
 			}
 		} finally {
-			toAllLock.writeLock().unlock();
+			collaborativeLock.writeLock().unlock();
 		}
 
 		Queue<Node<K, V>> q = new ArrayDeque<>();
+		ArrayList<V> results = new ArrayList<>(nodesFullIn.size());
+		int resultIndex = 0;
 		for (var node : nodesFullIn) {
-			if (node != null) {
-				q.add(node);
-			}
+			results.add(start);
+			var task = new ReduceCollaborativeTask(
+					start,
+					func,
+					results,
+					resultIndex++,
+					node
+			);
+			collaborativeQueue.add(task);
 		}
 
-		while (!q.isEmpty()) {
-			var p = q.poll();
-			if (p == null) {
-				continue;
-			}
-			if (p.vOpt != null && p.vOpt != SpecialNull) {
-				result = func.apply(result, (V) p.vOpt);
-			}
-			if (p.left != null) {
-				q.add(p.left);
-			}
-			if (p.right != null) {
-				q.add(p.right);
-			}
+//        while (!q.isEmpty()) {
+//            Node<K, V> node = q.poll();
+//            result = func.apply(result, (V) node.vOpt);
+//            if (node.left != null) {
+//                q.add(node.left);
+//            }
+//            if (node.right != null) {
+//                q.add(node.right);
+//            }
+//        }
+		collaborativeQueue.helpIfNeeded();
+		collaborativeQueue.waitForFinish();
+
+		for (var tResult: results) {
+			result = func.apply(result, tResult);
 		}
 
 		for (var node : nodesFullIn) {

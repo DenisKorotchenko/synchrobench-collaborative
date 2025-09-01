@@ -1,3 +1,11 @@
+# About this fork
+
+TODO
+
+This fork is based on synchobench (see below).
+
+In this fork you can see only java datastructures for collaborative efficient evaluation. 
+
 Synchrobench
 ============
 Synchrobench is a micro-benchmark suite used to evaluate synchronization 

@@ -42,10 +42,7 @@ package trees.lockbased;
 import contention.abstractions.CompositionalMap;
 
 import java.util.*;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 /**
  * A concurrent relaxed balance AVL tree, based on the algorithm of Bronson,
@@ -53,47 +50,17 @@ import java.util.function.Supplier;
  * published in PPoPP'10. To simplify the locking protocols rebalancing work is
  * performed in pieces, and some removed keys are be retained as routing nodes
  * in the tree.
- *
+ * 
  * <p>
  * Compared to SnapTreeMap, this implementation does not provide any
  * structural sharing with copy on write. As a result, it must support iteration
  * on the mutating structure, so nodes track both the number of shrinks (which
  * invalidate queries and traverals) and grows (which invalidate traversals).
- *
+ * 
  * @author Nathan Bronson
  */
-public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
+public class PureLockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V> {
-	private final ReadWriteLock toAllLock = new ReentrantReadWriteLock();
-
-	private <T> T withAllLock(Supplier<T> function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					return function.get();
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
-	}
-
-	private void withAllLock(Runnable function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					function.run();
-					return;
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
-	}
 	// public class OptTreeMap<K,V> extends AbstractMap<K,V> implements
 	// ConcurrentMap<K,V> {
 
@@ -210,7 +177,6 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		volatile long changeOVL;
 		volatile Node<K, V> left;
 		volatile Node<K, V> right;
-		volatile boolean changeLock;
 
 		Node(final K key, final int height, final Object vOpt,
 				final Node<K, V> parent, final long changeOVL,
@@ -222,7 +188,6 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			this.changeOVL = changeOVL;
 			this.left = left;
 			this.right = right;
-			this.changeLock = true;
 		}
 
 		Node<K, V> child(char dir) {
@@ -303,10 +268,10 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	// ////////////// public interface
 
-	public LockBasedStanfordTreeMap() {
+	public PureLockBasedStanfordTreeMap() {
 	}
 
-	public LockBasedStanfordTreeMap(final Comparator<? super K> comparator) {
+	public PureLockBasedStanfordTreeMap(final Comparator<? super K> comparator) {
 		this.comparator = comparator;
 	}
 
@@ -330,12 +295,10 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	@Override
 	public void clear() {
-		withAllLock(() -> {
-			synchronized (rootHolder) {
-				rootHolder.height = 1;
-				rootHolder.right = null;
-			}
-		});
+		synchronized (rootHolder) {
+			rootHolder.height = 1;
+			rootHolder.right = null;
+		}
 	}
 
 	public Comparator<? super K> comparator() {
@@ -680,37 +643,35 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	@SuppressWarnings("unchecked")
 	private Object update(final Object key, final int func,
 			final Object expected, final Object newValue) {
-		return withAllLock(() -> {
-			final Comparable<? super K> k = comparable(key);
+		final Comparable<? super K> k = comparable(key);
 
-			while (true) {
-				final Node<K, V> right = rootHolder.right;
-				if (right == null) {
-					// key is not present
-					if (!shouldUpdate(func, null, expected) || newValue == null
-							|| attemptInsertIntoEmpty((K) key, newValue)) {
-						// nothing needs to be done, or we were successful, prev
-						// value is Absent
-						return null;
+		while (true) {
+			final Node<K, V> right = rootHolder.right;
+			if (right == null) {
+				// key is not present
+				if (!shouldUpdate(func, null, expected) || newValue == null
+						|| attemptInsertIntoEmpty((K) key, newValue)) {
+					// nothing needs to be done, or we were successful, prev
+					// value is Absent
+					return null;
+				}
+				// else RETRY
+			} else {
+				final long ovl = right.changeOVL;
+				if (isShrinkingOrUnlinked(ovl)) {
+					right.waitUntilChangeCompleted(ovl);
+					// RETRY
+				} else if (right == rootHolder.right) {
+					// this is the protected .right
+					final Object vo = attemptUpdate(key, k, func, expected,
+							newValue, rootHolder, right, ovl);
+					if (vo != SpecialRetry) {
+						return vo;
 					}
 					// else RETRY
-				} else {
-					final long ovl = right.changeOVL;
-					if (isShrinkingOrUnlinked(ovl)) {
-						right.waitUntilChangeCompleted(ovl);
-						// RETRY
-					} else if (right == rootHolder.right) {
-						// this is the protected .right
-						final Object vo = attemptUpdate(key, k, func, expected,
-								newValue, rootHolder, right, ovl);
-						if (vo != SpecialRetry) {
-							return vo;
-						}
-						// else RETRY
-					}
 				}
 			}
-		});
+		}
 	}
 
 	private boolean attemptInsertIntoEmpty(final K key, final Object vOpt) {
@@ -750,9 +711,6 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		// child, so we don't need to build a huge transaction, just a chain of
 		// smaller read-only transactions.
 
-		while (!node.changeLock) {
-			Thread.yield();
-		}
 		assert (nodeOVL != UnlinkedOVL);
 
 		final int cmp = k.compareTo(node.key);
@@ -967,29 +925,27 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	private Entry<K, V> pollExtremeEntry(final char dir) {
-		return withAllLock(() -> {
-			while (true) {
-				final Node<K, V> right = rootHolder.right;
-				if (right == null) {
-					// tree is empty, nothing to remove
-					return null;
-				} else {
-					final long ovl = right.changeOVL;
-					if (isShrinkingOrUnlinked(ovl)) {
-						right.waitUntilChangeCompleted(ovl);
-						// RETRY
-					} else if (right == rootHolder.right) {
-						// this is the protected .right
-						final Entry<K, V> result = attemptRemoveExtreme(dir,
-								rootHolder, right, ovl);
-						if (result != null) {
-							return result;
-						}
-						// else RETRY
+		while (true) {
+			final Node<K, V> right = rootHolder.right;
+			if (right == null) {
+				// tree is empty, nothing to remove
+				return null;
+			} else {
+				final long ovl = right.changeOVL;
+				if (isShrinkingOrUnlinked(ovl)) {
+					right.waitUntilChangeCompleted(ovl);
+					// RETRY
+				} else if (right == rootHolder.right) {
+					// this is the protected .right
+					final Entry<K, V> result = attemptRemoveExtreme(dir,
+							rootHolder, right, ovl);
+					if (result != null) {
+						return result;
 					}
+					// else RETRY
 				}
 			}
-		});
+		}
 	}
 
 	/** Optimistic failure is returned as null. */
@@ -1752,17 +1708,17 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 		@Override
 		public int size() {
-			return LockBasedStanfordTreeMap.this.size();
+			return PureLockBasedStanfordTreeMap.this.size();
 		}
 
 		@Override
 		public boolean isEmpty() {
-			return LockBasedStanfordTreeMap.this.isEmpty();
+			return PureLockBasedStanfordTreeMap.this.isEmpty();
 		}
 
 		@Override
 		public void clear() {
-			LockBasedStanfordTreeMap.this.clear();
+			PureLockBasedStanfordTreeMap.this.clear();
 		}
 
 		@Override
@@ -1772,7 +1728,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			final Object k = ((Entry<?, ?>) o).getKey();
 			final Object v = ((Entry<?, ?>) o).getValue();
-			final Object actualVo = LockBasedStanfordTreeMap.this.getImpl(k);
+			final Object actualVo = PureLockBasedStanfordTreeMap.this.getImpl(k);
 			if (actualVo == null) {
 				// no associated value
 				return false;
@@ -1794,7 +1750,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			final Object k = ((Entry<?, ?>) o).getKey();
 			final Object v = ((Entry<?, ?>) o).getValue();
-			return LockBasedStanfordTreeMap.this.remove(k, v);
+			return PureLockBasedStanfordTreeMap.this.remove(k, v);
 		}
 
 		@Override
@@ -1844,46 +1800,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 		@Override
 		public void remove() {
-			LockBasedStanfordTreeMap.this.remove(mostRecentNode.key);
-		}
-	}
-
-
-
-	public ArrayList<Entry<K, V>> snapshot() {
-		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
-				try {
-					ArrayList<Entry<K, V>> result = new ArrayList<>();
-					Queue<Node<K, V>> q = new ArrayDeque<>();
-					q.add(rootHolder);
-					while (!q.isEmpty()) {
-						try {
-							var current = q.poll();
-							if (!(current.vOpt == SpecialNull || current.vOpt == null)) {
-								try {
-									result.add(new SimpleImmutableEntry<K, V>(current.key, (V) current.vOpt));
-								} catch (Throwable ignored) {
-								}
-							}
-							var left = current.left;
-							if (left != null) {
-								q.add(left);
-							}
-							var right = current.right;
-							if (right != null) {
-								q.add(right);
-							}
-						} catch (Throwable ignored) {
-						}
-					}
-					return result;
-				} finally {
-					toAllLock.writeLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
+			PureLockBasedStanfordTreeMap.this.remove(mostRecentNode.key);
 		}
 	}
 
@@ -1891,162 +1808,26 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			V start,
 			BiFunction<V, V, V> function
 	) {
-		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
-				try {
-					V res = start;
-					Deque<Node<K, V>> q = new ArrayDeque<>();
-					if (rootHolder != null) {
-						q.push(rootHolder);
-					}
-					while (!q.isEmpty()) {
-						var p = q.poll();
-						if (p == null) {
-							continue;
-						}
-						if (p.vOpt != null && p.vOpt != SpecialNull) {
-							res = function.apply(res, (V) p.vOpt);
-						}
-						if (p.left != null) {
-							q.push(p.left);
-						}
-						if (p.right != null) {
-							q.push(p.right);
-						}
-					}
-					return res;
-				} finally {
-					toAllLock.writeLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
+		V res = start;
+		Deque<Node<K, V>> q = new ArrayDeque<>();
+		if (rootHolder != null) {
+            q.push(rootHolder);
 		}
-	}
-
-	public V rangeQuery(
-			K left,
-			K right,
-			V start,
-			BiFunction<V, V, V> func
-	) {
-		final Comparable<? super K> leftK = comparable(left);
-		final Comparable<? super K> rightK = comparable(right);
-
-		final List<Node<K, V>> nodesFullIn = new LinkedList<>();
-
-		while (!toAllLock.writeLock().tryLock()) {
-            Thread.yield();
-        }
-		var cur = rootHolder.right;
-		var result = start;
-		try {
-			while (cur != null && cur.key != null) {
-				while (!cur.changeLock) {
-					Thread.yield();
-				}
-				if (rightK.compareTo(cur.key) < 0) {
-					cur = cur.left;
-				} else if (leftK.compareTo(cur.key) > 0) {
-					cur = cur.right;
-				} else {
-					break;
-				}
-			}
-			if (cur == null) {
-				return start;
-			}
-			var v = (V) cur.vOpt;
-			if (v != null) {
-				result = func.apply(result, v);
-			}
-			var leftCur = cur.left;
-			while (leftCur != null && leftCur.key != null) {
-				while (!leftCur.changeLock) {
-					Thread.yield();
-				}
-				if (leftK.compareTo(leftCur.key) == 0) {
-					nodesFullIn.add(leftCur.right);
-					v = (V) leftCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					break;
-				}
-				if (leftK.compareTo(leftCur.key) < 0) {
-					nodesFullIn.add(leftCur.right);
-					v = (V) leftCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					leftCur = leftCur.left;
-				} else {
-					leftCur = leftCur.right;
-				}
-			}
-			var rightCur = cur.right;
-			while (rightCur != null && rightCur.key != null) {
-				while (!rightCur.changeLock) {
-					Thread.yield();
-				}
-				if (rightK.compareTo(rightCur.key) == 0) {
-					nodesFullIn.add(rightCur.left);
-					v = (V) rightCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					break;
-				}
-				if (rightK.compareTo(rightCur.key) > 0) {
-					nodesFullIn.add(rightCur.left);
-					v = (V) rightCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					rightCur = rightCur.right;
-				} else {
-					rightCur = rightCur.left;
-				}
-			}
-
-			for (var tV : nodesFullIn) {
-				if (tV != null) {
-					tV.changeLock = false;
-				}
-			}
-		} finally {
-			toAllLock.writeLock().unlock();
-		}
-
-		Queue<Node<K, V>> q = new ArrayDeque<>();
-		for (var node : nodesFullIn) {
-			if (node != null) {
-				q.add(node);
-			}
-		}
-
 		while (!q.isEmpty()) {
 			var p = q.poll();
 			if (p == null) {
 				continue;
 			}
 			if (p.vOpt != null && p.vOpt != SpecialNull) {
-				result = func.apply(result, (V) p.vOpt);
+				res = function.apply(res, (V) p.vOpt);
 			}
 			if (p.left != null) {
-				q.add(p.left);
+                q.push(p.left);
 			}
 			if (p.right != null) {
-				q.add(p.right);
+                q.push(p.right);
 			}
 		}
-
-		for (var node : nodesFullIn) {
-			if (node != null) {
-				node.changeLock = true;
-			}
-		}
-
-		return result;
+		return res;
 	}
 }
