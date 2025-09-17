@@ -16,7 +16,8 @@ public class Parameters {
     	range = 2048,
 	size = 1024,
 	warmUp = 0,
-    	iterations = 1;
+	iterations = 1;
+	public static String csvPath = "";
     
     public static boolean detailedStats = false;
 

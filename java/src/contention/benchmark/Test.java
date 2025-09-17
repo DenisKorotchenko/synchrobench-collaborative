@@ -1,5 +1,7 @@
 package contention.benchmark;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Formatter;
@@ -372,6 +374,8 @@ public class Test {
 					else if (currentArg.equals("--iterations")
 							|| currentArg.equals("-n"))
 						Parameters.iterations = Integer.parseInt(optionValue);
+					else if (currentArg.equals("--csvPath"))
+						Parameters.csvPath = optionValue;
 				}
 			} catch (IndexOutOfBoundsException e) {
 				System.err.println("Missing value after option: " + currentArg
@@ -967,7 +971,27 @@ public class Test {
 			sum += ((throughput[i]/1024)/1024);
 		}
 		System.out.println("  Total throughput (mebiops/s): " + sum);
-		double mean = sum / n;
+		System.out.println("!");
+		try (FileWriter csvWriter = new FileWriter(Parameters.csvPath, true)) {
+            csvWriter
+					.append(String.valueOf(Parameters.benchClassName))
+					.append(",")
+					.append(String.valueOf(Parameters.size))
+					.append(",")
+					.append(String.valueOf(Parameters.numThreads))
+					.append(",")
+					.append(String.valueOf(Parameters.numSnapshots))
+					.append(",")
+					.append(String.valueOf(Parameters.numWrites))
+					.append(",")
+					.append(String.valueOf(Parameters.numWriteAlls))
+					.append(",")
+					.append(formatDouble(sum * 1024))
+					.append("\n");
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+		}
+        double mean = sum / n;
 		System.out.println("  |--Mean:                    \t" + mean);
 		double temp = 0;
 		for (int i = 0; i < n; i++) {
@@ -985,6 +1009,6 @@ public class Test {
 
 	private static String formatDouble(double result) {
 		Formatter formatter = new Formatter(Locale.US);
-		return formatter.format("%.2f", result).out().toString();
+		return formatter.format("%.5f", result).out().toString();
 	}
 }

@@ -20,7 +20,7 @@ for s in ${snapshots}; do
           r=$((i*2))
           out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/${bench}-i${i}-u${u}-s${s}-t${t}.log
           echo "taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} >> ${out}"
-          taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} >> ${out}
+          taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results.csv >> ${out}
         done
       done
     done
