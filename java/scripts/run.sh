@@ -49,7 +49,7 @@ mkdir ${output}/log ${output}/data ${output}/plot ${output}/ps
 ###############################
 
 # lockfree benchmarks
-benchs="hashtables.lockfree.LFArrayHashSet hashtables.lockfree.NonBlockingCliffHashMap hashtables.lockfree.NonBlockingFriendlyHashMap linkedlists.lockfree.NonBlockingLinkedListSet queues.lockfree.LockFreeQueueIntSet skiplists.lockfree.NonBlockingFriendlySkiplistMap skiplists.lockfree.NonBlockingJavaSkipListMap trees.lockfree.NonBlockingTorontoBSTMap"
+benchs="trees.lockfree.NonBlockingTorontoBSTMap"
 if [[ "${syncs}" =~ "lockfree" ]]; then
 for bench in ${benchs}; do
   for write in ${writes}; do

@@ -18,9 +18,9 @@ for s in ${snapshots}; do
         u=$((((100-$s)*$write)/100))
         for i in ${size}; do
           r=$((i*2))
-          out=/home/denis/IdeaProjects/synchrobench-collaborative/log/3107-rangequeries-tree/${bench}-i${i}-u${u}-s${s}-t${t}.log
-          echo "/home/denis/.jdks/corretto-17.0.13/bin/java -javaagent:/snap/intellij-idea-community/588/lib/idea_rt.jar=41201 -Dfile.encoding=UTF-8 -classpath /home/denis/IdeaProjects/synchrobench-collaborative/out/production/synchrobench-collaborative:/home/denis/IdeaProjects/synchrobench-collaborative/java/lib/deuceAgent-1.3.0.jar:/home/denis/IdeaProjects/synchrobench-collaborative/java/lib/junit.jar contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u}"
-          /home/denis/.jdks/corretto-17.0.13/bin/java -javaagent:"/snap/intellij-idea-community/current/lib/idea_rt.jar=41201" -Dfile.encoding=UTF-8 -classpath /home/denis/IdeaProjects/synchrobench-collaborative/out/production/synchrobench-collaborative:/home/denis/IdeaProjects/synchrobench-collaborative/java/lib/deuceAgent-1.3.0.jar:/home/denis/IdeaProjects/synchrobench-collaborative/java/lib/junit.jar contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} >> ${out}
+          out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/${bench}-i${i}-u${u}-s${s}-t${t}.log
+          echo "taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} >> ${out}"
+          taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -s ${s} -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} -u ${u} >> ${out}
         done
       done
     done
