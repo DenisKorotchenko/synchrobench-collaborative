@@ -18,6 +18,8 @@ public class Parameters {
 	warmUp = 0,
 	iterations = 1;
 	public static String csvPath = "";
+
+	public static Integer[] distribution = new Integer[0];
     
     public static boolean detailedStats = false;
 

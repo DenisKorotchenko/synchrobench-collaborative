@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Random;
@@ -13,6 +14,7 @@ import contention.abstractions.CompositionalIntSet;
 import contention.abstractions.CompositionalMap;
 import contention.abstractions.CompositionalSortedSet;
 import contention.abstractions.MaintenanceAlg;
+import ru.dksu.semantic.ITestStructure;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of 
@@ -24,9 +26,9 @@ import contention.abstractions.MaintenanceAlg;
 public class Test {
 
 	public static final String VERSION = "11-17-2014";
-	
+
 	public enum Type {
-	    INTSET, MAP, SORTEDSET
+	    INTSET, MAP, SORTEDSET, TEST
 	}
 
 	/** The array of threads executing the benchmark */
@@ -35,6 +37,7 @@ public class Test {
 	private ThreadLoop[] threadLoops;
 	private ThreadSetLoop[] threadLoopsSet;
 	private ThreadSortedSetLoop[] threadLoopsSSet;
+	private TestThreadLoop[] testThreadLoops;
 	/** The observed duration of the benchmark */
 	private double elapsedTime;
 	/** The throughput */
@@ -57,6 +60,8 @@ public class Test {
 	private long aborts = 0;
 	/** The instance of the benchmark */
 	private Type benchType = null;
+
+	private ITestStructure testBench = null;
 	private CompositionalIntSet setBench = null;
 	private CompositionalSortedSet<Integer> sortedBench = null;
 	private CompositionalMap<Integer, Integer> mapBench = null;
@@ -89,38 +94,50 @@ public class Test {
 			case MAP:
 				if (mapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
 					i--;
-				}	
+				}
 				break;
 			case SORTEDSET:
 				if (sortedBench.add((Integer) v)) {
 					i--;
-				}	
+				}
+				break;
+			case TEST:
+				testBench.set((Integer) v, s_random.get().nextInt(range * 2));
+				i--;
 				break;
 			default:
 				System.err.println("Wrong benchmark type");
 				System.exit(0);
-			}	
+			}
 		}
 	}
 
 
 	/**
 	 * Initialize the benchmark
-	 * 
+	 *
 	 * @param benchName
 	 *            the class name of the benchmark
 	 * @return the instance of the initialized corresponding benchmark
 	 */
 	@SuppressWarnings("unchecked")
 	public void instanciateAbstraction(
-			String benchName) {
+			String benchName,
+			Integer range
+			) {
 		try {
 			Class<CompositionalMap<Integer, Integer>> benchClass = (Class<CompositionalMap<Integer, Integer>>) Class
 					.forName(benchName);
+			if (ITestStructure.class.isAssignableFrom((Class<?>) benchClass)) {
+				Constructor<?> c = benchClass.getConstructor(Integer.class);
+				testBench = (ITestStructure) c.newInstance(range);
+				benchType = Type.TEST;
+				return;
+			}
 			Constructor<CompositionalMap<Integer, Integer>> c = benchClass
 					.getConstructor();
 			methods = benchClass.getDeclaredMethods();
-			
+
 			if (CompositionalIntSet.class.isAssignableFrom((Class<?>) benchClass)) {
 				setBench = (CompositionalIntSet)c.newInstance();
 				benchType = Type.INTSET;
@@ -131,17 +148,16 @@ public class Test {
 				sortedBench = (CompositionalSortedSet<Integer>) c.newInstance();
 				benchType = Type.SORTEDSET;
 			}
-			
 		} catch (Exception e) {
 			System.err.println("Cannot find benchmark class: " + benchName);
+			System.err.println(e.getMessage());
 			System.exit(-1);
 		}
 	}
-	
 
 	/**
 	 * Creates as many threads as requested
-	 * 
+	 *
 	 * @throws InterruptedException
 	 *             if unable to launch them
 	 */
@@ -171,13 +187,21 @@ public class Test {
 				threads[threadNum] = new Thread(threadLoopsSSet[threadNum]);
 			}
 			break;
+		case TEST:
+			testThreadLoops = new TestThreadLoop[Parameters.numThreads];
+			threads = new Thread[Parameters.numThreads];
+			for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+				testThreadLoops[threadNum] = new TestThreadLoop(threadNum, testBench, methods);
+				threads[threadNum] = new Thread(testThreadLoops[threadNum]);
+			}
+			break;
 		}
 	}
 
 	/**
 	 * Constructor sets up the benchmark by reading parameters and creating
 	 * threads
-	 * 
+	 *
 	 * @param args
 	 *            the arguments of the command-line
 	 */
@@ -189,13 +213,13 @@ public class Test {
 			System.err.println("Cannot parse parameters.");
 			e.printStackTrace();
 		}
-		instanciateAbstraction(Parameters.benchClassName);
+		instanciateAbstraction(Parameters.benchClassName, Parameters.range);
 		this.throughput = new double[Parameters.iterations];
 	}
 
 	/**
 	 * Execute the main thread that starts and terminates the benchmark threads
-	 * 
+	 *
 	 * @throws InterruptedException
 	 */
 	private void execute(int milliseconds, boolean maint)
@@ -222,6 +246,11 @@ public class Test {
 				for (ThreadSortedSetLoop threadLoop : threadLoopsSSet)
 					threadLoop.stopThread();
 				break;
+			case TEST:
+				for (TestThreadLoop threadLoop: testThreadLoops) {
+					threadLoop.stopThread();
+				}
+				break;
 			}
 		}
 		for (Thread thread : threads)
@@ -241,6 +270,9 @@ public class Test {
 			break;
 		case SORTEDSET:
 			sortedBench.clear();
+			break;
+		case TEST:
+			testBench.clear();
 			break;
 		}
 	}
@@ -267,14 +299,16 @@ public class Test {
 			test.resetStats();
 		}
 
-		// check that the structure is empty 
+		// check that the structure is empty
 		switch(test.benchType) {
 			case INTSET:
-				assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";	
+				assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
 			case MAP:
 				assert test.mapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
 			case SORTEDSET:
 				assert test.sortedBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+			case TEST:
+				assert true;
 		}
 
 		// running the bench
@@ -310,7 +344,16 @@ public class Test {
 						.getStructMods();
 			}
 
-			test.printBasicStats();
+			switch (test.benchType) {
+				case MAP:
+				case INTSET:
+				case SORTEDSET:
+					test.printBasicStats();
+					break;
+				case TEST:
+					test.printTestStats();
+			}
+
 			if (Parameters.detailedStats)
 				test.printDetailedStats();
 
@@ -376,6 +419,8 @@ public class Test {
 						Parameters.iterations = Integer.parseInt(optionValue);
 					else if (currentArg.equals("--csvPath"))
 						Parameters.csvPath = optionValue;
+					else if (currentArg.equals("--distribution"))
+						Parameters.distribution = Arrays.stream(optionValue.split(" ")).map(Integer::parseInt).toArray(sz -> new Integer[sz]);
 				}
 			} catch (IndexOutOfBoundsException e) {
 				System.err.println("Missing value after option: " + currentArg
@@ -394,7 +439,7 @@ public class Test {
 
 	/**
 	 * Print a 80 character line filled with the same marker character
-	 * 
+	 *
 	 * @param ch
 	 *            the marker character
 	 */
@@ -609,7 +654,7 @@ public class Test {
 		}
 		System.out.println("  Final size:              \t" + s);
 		assert s == (Parameters.size+numAdd-numRemove) : "Final size does not reflect the modifications.";
-		
+
 		//System.out.println("  Other size:              \t" + map.size());
 
 		// TODO what should print special for maint data structures
@@ -654,6 +699,125 @@ public class Test {
 
 	}
 
+	private void printTestStats() {
+		int s = 0;
+		int _total = 0;
+		int _numGetRange = 0;
+		int _numAddRange = 0;
+		int _numUpdateRange = 0;
+		int _failure = 0;
+
+		for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+			_failure += testThreadLoops[threadNum].failures;
+			_total += testThreadLoops[threadNum].total;
+			_numGetRange += testThreadLoops[threadNum].numGetRange;
+			_numAddRange += testThreadLoops[threadNum].numAddRange;
+			_numUpdateRange += testThreadLoops[threadNum].numUpdateRange;
+		}
+		throughput[currentIteration] = ((double) _total / elapsedTime);
+		printLine('-');
+		System.out.println("Benchmark statistics");
+		printLine('-');
+//		System.out.println("  Average traversal length: \t"
+//				+ (double) nodesTraversed / (double) getCount);
+//		System.out.println("  Struct Modifications:     \t" + structMods);
+		System.out.println("  Throughput (ops/s):       \t" + throughput[currentIteration]);
+		System.out.println("  Elapsed time (s):         \t" + elapsedTime);
+		System.out.println("  Operations:               \t" + _total
+				+ "\t( 100 %)");
+//		System.out.println("    effective updates:     \t"
+//				+ (numAdd + numRemove + numAddAll + numRemoveAll)
+//				+ "\t( "
+//				+ formatDouble(((double) (numAdd + numRemove
+//				+ numAddAll + numRemoveAll) * 100)
+//				/ (double) total) + " %)");
+		System.out.println("    |--getRange successful:     \t" + _numGetRange + "\t( "
+				+ formatDouble(((double) _numGetRange / (double) total) * 100)
+				+ " %)");
+		System.out.println("    |--addRange succ.:       \t" + _numAddRange + "\t( "
+				+ formatDouble(((double) _numAddRange / (double) total) * 100)
+				+ " %)");
+		System.out.println("    |--updateRange succ.:       \t" + _numUpdateRange + "\t( "
+				+ formatDouble(((double) _numUpdateRange / (double) total) * 100)
+				+ " %)");
+//		System.out.println("    |--removeAll succ.:    \t" + numRemoveAll
+//				+ "\t( "
+//				+ formatDouble(((double) numRemoveAll / (double) total) * 100)
+//				+ " %)");
+//		System.out.println("    size successful:       \t" + numSize + "\t( "
+//				+ formatDouble(((double) numSize / (double) total) * 100)
+//				+ " %)");
+//		System.out.println("    contains succ.:        \t" + numContains
+//				+ "\t( "
+//				+ formatDouble(((double) numContains / (double) total) * 100)
+//				+ " %)");
+		System.out.println("    unsuccessful ops:      \t" + _failure + "\t( "
+				+ formatDouble(((double) _failure / (double) total) * 100)
+				+ " %)");
+//		switch(benchType) {
+//			case INTSET:
+//				s = setBench.size();
+//				//System.out.println("  Final size:              \t" + setBench.size());
+//				//if (Parameters.numWriteAlls == 0) System.out.println("  Expected size:           \t" + (Parameters.size+numAdd-numRemove));
+//				break;
+//			case MAP:
+//				s = mapBench.size();
+//				//System.out.println("  Final size:              \t" + mapBench.size());
+//				//if (Parameters.numWriteAlls == 0) System.out.println("  Expected size:           \t" + (Parameters.size+numAdd-numRemove));
+//				break;
+//			case SORTEDSET:
+//				s = sortedBench.size();
+//				//System.out.println("  Final size:              \t" + sortedBench.size());
+//				//if (Parameters.numWriteAlls == 0) System.out.println("  Expected size:           \t" + (Parameters.size+numAdd-numRemove));
+//				break;
+//		}
+//		System.out.println("  Final size:              \t" + s);
+//		assert s == (Parameters.size+numAdd-numRemove) : "Final size does not reflect the modifications.";
+
+		//System.out.println("  Other size:              \t" + map.size());
+
+		// TODO what should print special for maint data structures
+		// if (bench instanceof CASSpecFriendlyTreeLockFree) {
+		// System.out.println("  Balance:              \t"
+		// + ((CASSpecFriendlyTreeLockFree) bench).getBalance());
+		// }
+		// if (bench instanceof SpecFriendlyTreeLockFree) {
+		// System.out.println("  Balance:              \t"
+		// + ((SpecFriendlyTreeLockFree) bench).getBalance());
+		// }
+		// if (bench instanceof TransFriendlyMap) {
+		// System.out.println("  Balance:              \t"
+		// + ((TransFriendlyMap) bench).getBalance());
+		// }
+		// if (bench instanceof UpdatedTransFriendlySkipList) {
+		// System.out.println("  Bottom changes:              \t"
+		// + ((UpdatedTransFriendlySkipList) bench)
+		// .getBottomLevelRaiseCount());
+		// }
+
+//		switch(benchType) {
+//			case INTSET:
+//				if (setBench instanceof MaintenanceAlg) {
+//					System.out.println("  #nodes (inc. deleted): \t"
+//							+ ((MaintenanceAlg) setBench).numNodes());
+//				}
+//				break;
+//			case MAP:
+//				if (mapBench instanceof MaintenanceAlg) {
+//					System.out.println("  #nodes (inc. deleted): \t"
+//							+ ((MaintenanceAlg) mapBench).numNodes());
+//				}
+//				break;
+//			case SORTEDSET:
+//				if (mapBench instanceof MaintenanceAlg) {
+//					System.out.println("  #nodes (inc. deleted): \t"
+//							+ ((MaintenanceAlg) sortedBench).numNodes());
+//				}
+//				break;
+//		}
+
+	}
+
 	/**
 	 * Detailed Warmup TM Statistics
 	 */
@@ -692,7 +856,7 @@ public class Test {
 		for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
 			switch (benchType) {
 			case INTSET:
-			
+
 			threadLoopsSet[threadNum].numAdd = 0;
 			threadLoopsSet[threadNum].numRemove = 0;
 			threadLoopsSet[threadNum].numAddAll = 0;
@@ -734,6 +898,8 @@ public class Test {
 			threadLoopsSSet[threadNum].getCount = 0;
 			threadLoopsSSet[threadNum].structMods = 0;
 			break;
+			case TEST:
+				testThreadLoops[threadNum].clearCounters();
 			}
 
 		}
