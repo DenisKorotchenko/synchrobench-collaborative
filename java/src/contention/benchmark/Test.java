@@ -732,13 +732,13 @@ public class Test {
 //				+ numAddAll + numRemoveAll) * 100)
 //				/ (double) total) + " %)");
 		System.out.println("    |--getRange successful:     \t" + _numGetRange + "\t( "
-				+ formatDouble(((double) _numGetRange / (double) total) * 100)
+				+ formatDouble(((double) _numGetRange / (double) _total) * 100)
 				+ " %)");
 		System.out.println("    |--addRange succ.:       \t" + _numAddRange + "\t( "
-				+ formatDouble(((double) _numAddRange / (double) total) * 100)
+				+ formatDouble(((double) _numAddRange / (double) _total) * 100)
 				+ " %)");
 		System.out.println("    |--updateRange succ.:       \t" + _numUpdateRange + "\t( "
-				+ formatDouble(((double) _numUpdateRange / (double) total) * 100)
+				+ formatDouble(((double) _numUpdateRange / (double) _total) * 100)
 				+ " %)");
 //		System.out.println("    |--removeAll succ.:    \t" + numRemoveAll
 //				+ "\t( "
@@ -752,7 +752,7 @@ public class Test {
 //				+ formatDouble(((double) numContains / (double) total) * 100)
 //				+ " %)");
 		System.out.println("    unsuccessful ops:      \t" + _failure + "\t( "
-				+ formatDouble(((double) _failure / (double) total) * 100)
+				+ formatDouble(((double) _failure / (double) _total) * 100)
 				+ " %)");
 //		switch(benchType) {
 //			case INTSET:

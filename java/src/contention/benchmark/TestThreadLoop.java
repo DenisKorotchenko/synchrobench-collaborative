@@ -107,7 +107,7 @@ public class TestThreadLoop implements Runnable {
 				}
 				int value = rand.nextInt(-Parameters.range, Parameters.range);
 				try {
-					bench.addRange(newInt, newInt2, value);
+					bench.updateRange(newInt, newInt2, value);
 					numUpdateRange++;
 				} catch (Exception e) {
 					this.failures++;
@@ -121,7 +121,7 @@ public class TestThreadLoop implements Runnable {
 				}
 				int value = rand.nextInt(-Parameters.range, Parameters.range);
 				try {
-					bench.addRange(newInt, newInt2, value);
+					bench.getRangeSum(newInt, newInt2);
 					numGetRange ++;
 				} catch (Exception e) {
 					this.failures++;

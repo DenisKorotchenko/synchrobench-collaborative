@@ -1,7 +1,8 @@
 package ru.dksu.semantic;
 
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -54,9 +55,7 @@ public class SemanticLock {
             }
             this.lockCounts[operationNumber]++;
             if (fairness) {
-                try {
-                    threadsQueue.take();
-                } catch (InterruptedException ignored) {}
+                threadsQueue.poll();
             }
             return true;
         } finally {
@@ -64,7 +63,7 @@ public class SemanticLock {
         }
     }
 
-    private final BlockingQueue<Long> threadsQueue = new LinkedBlockingQueue<>();
+    private final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
 
     public void lock(int operationNumber) {
         if (fairness) {
