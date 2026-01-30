@@ -1134,8 +1134,9 @@ public class Test {
 		System.out.println("  Iterations:                 \t" + n);
 		double sum = 0;
 		for (int i = 0; i < n; i++) {
-			sum += ((throughput[i]/1024)/1024);
+			sum += ((throughput[i]/1024));
 		}
+		sum /= n;
 		System.out.println("  Total throughput (mebiops/s): " + sum);
 		System.out.println("!");
 		try (FileWriter csvWriter = new FileWriter(Parameters.csvPath, true)) {
@@ -1146,12 +1147,12 @@ public class Test {
 					.append(",")
 					.append(String.valueOf(Parameters.numThreads))
 					.append(",")
-					.append(String.valueOf(Parameters.numSnapshots))
+					.append(String.valueOf(Parameters.distribution[0]) + ":" + String.valueOf(Parameters.distribution[1]) + ":")
 					.append(",")
-					.append(String.valueOf(Parameters.numWrites))
-					.append(",")
-					.append(String.valueOf(Parameters.numWriteAlls))
-					.append(",")
+					// .append(String.valueOf(Parameters.numWrites))
+					// .append(",")
+					// .append(String.valueOf(Parameters.numWriteAlls))
+					// .append(",")
 					.append(formatDouble(sum * 1024))
 					.append("\n");
 		} catch (IOException e) {

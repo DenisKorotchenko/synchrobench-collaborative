@@ -82,10 +82,11 @@ public class TestThreadLoop implements Runnable {
 	public void run() {
 
 		while (!stop) {
-			Integer newInt = rand.nextInt(Parameters.range);
+			Integer newInt = rand.nextInt(Parameters.range - 128);
 			int coin = rand.nextInt(1000);
 			if (coin < cdf[0]) { // 1. addRange
-				int newInt2 = rand.nextInt(Parameters.range);
+				// int newInt2 = newInt + 128;
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;
@@ -99,7 +100,8 @@ public class TestThreadLoop implements Runnable {
 					this.failures++;
 				}
 			} else if (coin < cdf[1]) { // 2. updateRange
-				int newInt2 = rand.nextInt(Parameters.range);
+				// int newInt2 = newInt + 128;
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;
@@ -113,13 +115,14 @@ public class TestThreadLoop implements Runnable {
 					this.failures++;
 				}
 			} else { // 3. getRange
-				int newInt2 = rand.nextInt(Parameters.range);
+				// int newInt2 = newInt + 128;
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;
 					newInt2 = temp;
 				}
-				int value = rand.nextInt(-Parameters.range, Parameters.range);
+				// int value = rand.nextInt(-Parameters.range, Parameters.range);
 				try {
 					bench.getRangeSum(newInt, newInt2);
 					numGetRange ++;
