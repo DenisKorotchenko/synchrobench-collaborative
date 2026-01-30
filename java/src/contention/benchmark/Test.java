@@ -102,8 +102,8 @@ public class Test {
 				}
 				break;
 			case TEST:
-				testBench.set((Integer) v, s_random.get().nextInt(range * 2));
-				i--;
+//				testBench.updateRange((Integer) v, s_random.get().nextInt(range * 2));
+				i=0;
 				break;
 			default:
 				System.err.println("Wrong benchmark type");

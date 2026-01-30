@@ -60,10 +60,13 @@ public class TestThreadLoop implements Runnable {
 		cdf[0] = Parameters.distribution[0] * 10;
 		cdf[1] = (Parameters.distribution[0] + Parameters.distribution[1]) * 10;
 		cdf[2] = 1000;
-		System.out.println("Distribution: ");
-		for (int _cdf: cdf) {
-			System.out.print(_cdf);
-			System.out.println(" ");
+
+		if (myThreadNum == 0) {
+			System.out.println("Distribution: ");
+			for (int _cdf : cdf) {
+				System.out.print(_cdf);
+				System.out.println(" ");
+			}
 		}
 //		assert (Parameters.numWrites >= Parameters.numWriteAlls);
 //		cdf[0] = 10 * Parameters.numWriteAlls;
