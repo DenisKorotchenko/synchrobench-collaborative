@@ -20,11 +20,11 @@ size="67108864"
 #benchs="ru.dksu.semantic.TestStructure ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple" # ru.dksu.semantic.TestStructureRWSL"
 # benchs="ru.dksu.semantic.TestStructureSimple"
 #benchs="ru.dksu.semantic.ARATestStructure ru.dksu.semantic.ARATestStructureRW ru.dksu.semantic.ARATestStructureWithout"
-benchs="ru.dksu.semantic.TestStructureShortLong ru.dksu.semantic.TestStructureShortLongRW"
+benchs="ru.dksu.semantic.TestStructure ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureShortLong ru.dksu.semantic.TestStructureShortLongRW"
 # for s in ${snapshots}; do
-for t in ${thread}; do
+for bench in ${benchs}; do
+  for t in ${thread}; do
     # for write in ${writes}; do
-  for bench in ${benchs}; do
       # u=$((((100-$s)*$write)/100))
     for i in ${size}; do
         # r=$((i*2))
