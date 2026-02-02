@@ -3,6 +3,7 @@ package ru.dksu.semantic;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -10,9 +11,7 @@ public class SemanticLock {
     int operationsNumber;
     int[][] conflicts;
 
-    Lock overallLock = new ReentrantLock();
-
-    int[] lockCounts;
+    AtomicInteger[] lockCounts;
 
     public SemanticLock(
             int operationsNumber,
@@ -39,28 +38,38 @@ public class SemanticLock {
         }
         this.operationsNumber = operationsNumber;
         this.conflicts = conflicts;
-        this.lockCounts = new int[operationsNumber];
+        this.lockCounts = new AtomicInteger[operationsNumber];
+        for (int i = 0; i < operationsNumber; i++) {
+            this.lockCounts[i] = new AtomicInteger();
+        }
     }
 
-    public boolean tryLock(int operationNumber) {
+
+    private boolean tryLock(int operationNumber) {
         if (fairness && threadsQueue.peek() != Thread.currentThread().getId()) {
             return false;
         }
-        overallLock.lock();
-        try {
-            for (int i = 0; i < operationsNumber; i++) {
-                if (this.conflicts[operationNumber][i] > 0 && this.lockCounts[i] > 0) {
-                    return false;
-                }
-            }
-            this.lockCounts[operationNumber]++;
-            if (fairness) {
-                threadsQueue.poll();
-            }
-            return true;
-        } finally {
-            overallLock.unlock();
+        int value = this.lockCounts[operationNumber].incrementAndGet();
+
+        if (this.conflicts[operationNumber][operationNumber] > 0 && value > 1) {
+            this.lockCounts[operationNumber].decrementAndGet();
+            return false;
         }
+        for (int i = 0; i < operationsNumber; i++) {
+            if (i == operationNumber)
+                continue;
+            if (this.conflicts[operationNumber][i] > 0 && this.lockCounts[i].get() > 0) {
+                this.lockCounts[operationNumber].decrementAndGet();
+                return false;
+            }
+        }
+        if (fairness) {
+            if (threadsQueue.poll() != Thread.currentThread().getId()) {
+                System.err.println("Thread is wrong!");
+                throw new RuntimeException("Thread is wrong");
+            }
+        }
+        return true;
     }
 
     private final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
@@ -73,13 +82,8 @@ public class SemanticLock {
             Thread.yield();
         }
     }
-
+    
     public void unlock(int operationNumber) {
-        overallLock.lock();
-        try {
-            this.lockCounts[operationNumber]--;
-        } finally {
-            overallLock.unlock();
-        }
+        this.lockCounts[operationNumber].decrementAndGet();
     }
 }
