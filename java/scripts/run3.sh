@@ -1,6 +1,6 @@
 #!/bin/bash
 
-thread="1 2 4 8 16 24 31"
+thread="1 2 4 8 15"
 # thread="32"
 # thread="1 4 8"
 # size="4194304"
@@ -33,7 +33,7 @@ for bench in ${benchs}; do
       r=$i
       out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
       echo "numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 10000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution 33 33 --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}"
-      numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution "33 33" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
+      numactl -p 0 taskset -c 0-15 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution "33 33" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
     done
   done
 done
