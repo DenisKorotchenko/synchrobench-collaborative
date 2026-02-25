@@ -23,8 +23,9 @@ size="67108864"
 #benchs="ru.dksu.semantic.ARATestStructure ru.dksu.semantic.ARATestStructureRW ru.dksu.semantic.ARATestStructureWithout"
 #benchs="ru.dksu.semantic.TestStructure ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple
 #benchs="ru.dksu.semantic.TestStructureShortLong ru.dksu.semantic.TestStructureShortLongRW"
-benchs="ru.dksu.semantic.TestStructure" #ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
+#benchs="ru.dksu.semantic.TestStructure" #ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
 # for s in ${snapshots}; do
+benchs="ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL ru.dksu.semantic.ExtendedMapSL3"
 for bench in ${benchs}; do
   for t in ${thread}; do
     # for write in ${writes}; do
