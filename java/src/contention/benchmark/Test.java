@@ -977,8 +977,10 @@ public class Test {
 			threadLoopsSSet[threadNum].structMods = 0;
 			break;
 			case TEST:
-            case TESTMAP:
 				testThreadLoops[threadNum].clearCounters();
+                break;
+            case TESTMAP:
+                testMapThreadLoops[threadNum].clearCounters();
 			}
 
 		}
