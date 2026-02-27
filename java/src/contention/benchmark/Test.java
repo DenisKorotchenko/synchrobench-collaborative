@@ -855,7 +855,8 @@ public class Test {
         int _total = 0;
         int _numModify = 0;
         int _numGet = 0;
-        int _numMax = 0;
+        int _numSum = 0;
+        int _numCap = 0;
         int _failure = 0;
 
         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -863,7 +864,8 @@ public class Test {
             _total += testMapThreadLoops[threadNum].total;
             _numModify += testMapThreadLoops[threadNum].numModify;
             _numGet += testMapThreadLoops[threadNum].numGet;
-            _numMax += testMapThreadLoops[threadNum].numMax;
+            _numSum += testMapThreadLoops[threadNum].numSum;
+            _numCap += testMapThreadLoops[threadNum].numCap;
         }
         throughput[currentIteration] = ((double) _total / elapsedTime);
         printLine('-');
@@ -888,8 +890,11 @@ public class Test {
         System.out.println("    |--get succ.:       \t" + _numGet + "\t( "
                 + formatDouble(((double) _numGet / (double) _total) * 100)
                 + " %)");
-        System.out.println("    |--max succ.:       \t" + _numMax + "\t( "
-                + formatDouble(((double) _numMax / (double) _total) * 100)
+        System.out.println("    |--sum succ.:       \t" + _numSum + "\t( "
+                + formatDouble(((double) _numSum / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--cap succ.:       \t" + _numCap + "\t( "
+                + formatDouble(((double) _numCap / (double) _total) * 100)
                 + " %)");
         System.out.println("    unsuccessful ops:      \t" + _failure + "\t( "
                 + formatDouble(((double) _failure / (double) _total) * 100)

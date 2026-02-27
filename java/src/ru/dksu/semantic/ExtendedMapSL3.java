@@ -8,27 +8,46 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ExtendedMapSL3 implements ExtendedMap {
     private ConcurrentHashMap<Integer, Integer> _map = new ConcurrentHashMap<>();
     private SemanticLock semanticLock = new SemanticLock(
-            3,
+            4,
             new int[][] {
-                    {0, 0, 0},
-                    {0, 0, 1},
-                    {0, 1, 0},
+                    {0, 0, 0, 0},
+                    {0, 0, 1, 1},
+                    {0, 1, 0, 1},
+                    {0, 1, 1, 1},
             }
     );
 
     @Override
-    public Integer max() {
+    public Integer sum() {
         semanticLock.lock(2);
         try {
-            Integer max = null;
+            Integer sum = 0;
             for (var el: _map.values()) {
-                if (max == null || el > max) {
-                    max = el;
+                if (el != null) {
+                    sum += el;
                 }
             }
-            return max;
+            return sum;
         } finally {
             semanticLock.unlock(2);
+        }
+    }
+
+    @Override
+    public Integer cap(Integer maxValue) {
+        semanticLock.lock(3);
+        try {
+            final int[] x = {0};
+            _map.replaceAll((key, value) -> {
+                if (maxValue < value) {
+                    x[0]++;
+                    return maxValue;
+                }
+                return value;
+            });
+            return x[0];
+        } finally {
+            semanticLock.unlock(3);
         }
     }
 

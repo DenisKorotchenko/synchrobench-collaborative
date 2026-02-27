@@ -13,16 +13,34 @@ public class ExtendedMapRW implements ExtendedMap {
     private ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     @Override
-    public Integer max() {
+    public Integer sum() {
         rwLock.writeLock().lock();
         try {
-            Integer max = null;
+            Integer sum = 0;
             for (var el: _map.values()) {
-                if (max == null || el > max) {
-                    max = el;
+                if (el != null) {
+                    sum += el;
                 }
             }
-            return max;
+            return sum;
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public Integer cap(Integer maxValue) {
+        rwLock.writeLock().lock();
+        try {
+            final int[] x = {0};
+            _map.replaceAll((key, value) -> {
+                if (maxValue > value) {
+                    x[0]++;
+                    return maxValue;
+                }
+                return value;
+            });
+            return x[0];
         } finally {
             rwLock.writeLock().unlock();
         }

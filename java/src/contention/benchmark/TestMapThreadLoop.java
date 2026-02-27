@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.Random;
 
 import ru.dksu.semantic.ExtendedMap;
-import ru.dksu.semantic.ITestStructure;
 
 /**
  * The loop executed by each thread of the map 
@@ -27,7 +26,8 @@ public class TestMapThreadLoop implements Runnable {
 	/** The counters of the thread successful operations */
 	public long numModify = 0;
 	public long numGet = 0;
-	public long numMax = 0;
+	public long numSum = 0;
+    public long numCap = 0;
 	/** The counter of the false-returning operations */
 	public long failures = 0;
 	/** The counter of the thread operations */
@@ -42,22 +42,24 @@ public class TestMapThreadLoop implements Runnable {
 	public void clearCounters() {
 		numModify = 0;
 		numGet = 0;
-		numMax = 0;
+		numSum = 0;
+        numCap = 0;
 		failures = 0;
 		total = 0;
 	}
 
-	int[] cdf = new int[3];
+	int[] cdf = new int[4];
 
 	public TestMapThreadLoop(short myThreadNum,
                              ExtendedMap bench, Method[] methods) {
 		this.myThreadNum = myThreadNum;
 		this.bench = bench;
 		/* initialize the method boundaries */
-		assert Parameters.distribution.length == 2;
+		assert Parameters.distribution.length == 3;
 		cdf[0] = Parameters.distribution[0] * 10;
 		cdf[1] = (Parameters.distribution[0] + Parameters.distribution[1]) * 10;
-		cdf[2] = 1000;
+        cdf[2] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2]) * 10;
+		cdf[3] = 1000;
 
 		if (myThreadNum == 0) {
 			System.out.println("Distribution: ");
@@ -104,17 +106,25 @@ public class TestMapThreadLoop implements Runnable {
 				} catch (Exception e) {
 					this.failures++;
 				}
-			} else { // 3. max
+			} else if (coin < cdf[2]) { // 3. sum
 				try {
-					bench.max();
-					numMax++;
+					bench.sum();
+					numSum++;
 				} catch (Exception e) {
 					this.failures++;
 				}
-			}
+			} else { // 4. cap
+                try {
+                    int value = rand.nextInt(-Parameters.range, Parameters.range);
+                    bench.cap(value);
+                    numCap++;
+                } catch (Exception e) {
+                    this.failures++;
+                }
+            }
 			total++;
 
-			assert total == numGet + numModify + numMax + failures;
+			assert total == numGet + numModify + numSum + numCap + failures;
 		}
 		// System.out.println(numAdd + " " + numRemove + " " + failures);
 
