@@ -10,10 +10,10 @@ public class ExtendedMapSL3 implements ExtendedMap {
     private SemanticLock semanticLock = new SemanticLock(
             4,
             new int[][] {
-                    {0, 0, 0, 0},
+                    {0, 0, 0, 1},
                     {0, 0, 1, 1},
                     {0, 1, 0, 1},
-                    {0, 1, 1, 1},
+                    {1, 1, 1, 1},
             }
     );
 
