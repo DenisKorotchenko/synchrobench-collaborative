@@ -9,19 +9,33 @@ public class ExtendedMapNoLock implements ExtendedMap {
     private ConcurrentHashMap<Integer, Integer> _map = new ConcurrentHashMap<>();
 
     @Override
-    public Integer max() {
+    public Integer sum() {
         try {
-            Integer max = null;
+            Integer sum = 0;
             for (var el: _map.values()) {
-                if (max == null || el > max) {
-                    max = el;
+                if (el != null) {
+                    sum += el;
                 }
             }
-            return max;
+            return sum;
         } finally {
 
         }
     }
+
+    @Override
+    public Integer cap(Integer maxValue) {
+        final int[] x = {0};
+        _map.replaceAll((key, value) -> {
+            if (maxValue < value) {
+                x[0]++;
+                return maxValue;
+            }
+            return value;
+        });
+        return x[0];
+    }
+
 
     @Override
     public int size() {
