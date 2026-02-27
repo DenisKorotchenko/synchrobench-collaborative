@@ -1219,12 +1219,19 @@ public class Test {
 		int n = Parameters.iterations;
 		System.out.println("  Iterations:                 \t" + n);
 		double sum = 0;
+        double[] throughputs = new double[n];
 		for (int i = 0; i < n; i++) {
 			sum += ((throughput[i]/1024));
+            throughputs[i] = throughput[i] / 1024;
 		}
-		sum /= n;
+        if (n >= 5 && n < 8) {
+            sum = Arrays.stream(throughputs).sorted().skip(1).limit(throughputs.length-2).average().getAsDouble();
+        } else if (n >= 8) {
+            sum = Arrays.stream(throughputs).sorted().skip(2).limit(throughputs.length-4).average().getAsDouble();
+        } else {
+            sum /= n;
+        }
 		System.out.println("  Total throughput (mebiops/s): " + sum);
-		System.out.println("!");
 		try (FileWriter csvWriter = new FileWriter(Parameters.csvPath, true)) {
             csvWriter
 					.append(String.valueOf(Parameters.benchClassName))
@@ -1244,7 +1251,7 @@ public class Test {
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
-        double mean = sum / n;
+        double mean = sum;
 		System.out.println("  |--Mean:                    \t" + mean);
 		double temp = 0;
 		for (int i = 0; i < n; i++) {

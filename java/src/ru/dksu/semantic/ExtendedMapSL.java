@@ -11,8 +11,8 @@ public class ExtendedMapSL implements ExtendedMap {
             3,
             new int[][] {
                     {0, 1, 1},
-                    {1, 0, 1},
-                    {1, 1, 1}
+                    {1, 0, 0},
+                    {1, 0, 1}
             }
     );
 
@@ -20,13 +20,11 @@ public class ExtendedMapSL implements ExtendedMap {
     public Integer sum() {
         semanticLock.lock(1);
         try {
-            Integer sum = 0;
-            for (var el: _map.values()) {
-                if (el != null) {
-                    sum += el;
-                }
-            }
-            return sum;
+            final Integer[] sum = {0};
+            _map.keys().asIterator().forEachRemaining( el ->
+                    sum[0] += el
+            );
+            return sum[0];
         } finally {
             semanticLock.unlock(1);
         }

@@ -11,13 +11,11 @@ public class ExtendedMapNoLock implements ExtendedMap {
     @Override
     public Integer sum() {
         try {
-            Integer sum = 0;
-            for (var el: _map.values()) {
-                if (el != null) {
-                    sum += el;
-                }
-            }
-            return sum;
+            final Integer[] sum = {0};
+            _map.keys().asIterator().forEachRemaining( el ->
+                    sum[0] += el
+            );
+            return sum[0];
         } finally {
 
         }

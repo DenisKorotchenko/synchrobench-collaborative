@@ -10,10 +10,10 @@ public class ExtendedMapSL3 implements ExtendedMap {
     private SemanticLock semanticLock = new SemanticLock(
             4,
             new int[][] {
-                    {0, 0, 0, 1},
+                    {0, 0, 0, 0},
                     {0, 0, 1, 1},
+                    {0, 1, 0, 0},
                     {0, 1, 0, 1},
-                    {1, 1, 1, 1},
             }
     );
 
@@ -21,13 +21,11 @@ public class ExtendedMapSL3 implements ExtendedMap {
     public Integer sum() {
         semanticLock.lock(2);
         try {
-            Integer sum = 0;
-            for (var el: _map.values()) {
-                if (el != null) {
-                    sum += el;
-                }
-            }
-            return sum;
+            final Integer[] sum = {0};
+            _map.keys().asIterator().forEachRemaining( el ->
+                    sum[0] += el
+            );
+            return sum[0];
         } finally {
             semanticLock.unlock(2);
         }
