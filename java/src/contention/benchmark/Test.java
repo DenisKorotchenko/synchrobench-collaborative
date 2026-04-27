@@ -1339,7 +1339,7 @@ public class Test {
 					.append(",")
 					.append(String.valueOf(Parameters.numThreads))
 					.append(",")
-					.append(String.valueOf(Parameters.distribution[0]) + ":" + String.valueOf(Parameters.distribution[1]) + ":")
+					.append(String.valueOf(Parameters.distribution[0]) + ":" + String.valueOf(Parameters.distribution[1]) + ":" + String.valueOf(Parameters.distribution[2]))
 					.append(",")
 					// .append(String.valueOf(Parameters.numWrites))
 					// .append(",")

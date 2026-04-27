@@ -29,16 +29,33 @@ benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap t
 
 distrs=(
   "49 49 2"
+  "49 49 0"
+  "49 49 1"
+  "48 48 4"
+  "48 48 0"
+  "48 48 2"
+  "46 46 8"
+  "46 46 0"
+  "46 46 4"
+  "42 42 16"
+  "42 42 0"
+  "42 42 8"
+  "34 34 32"
+  "34 34 0"
+  "34 34 16"
+  "18 18 64"
+  "18 18 0"
+  "18 18 32"
 )
 
-for i in ${size}; do
-  r=$i
-  for t in ${thread}; do
-    for dist in "${distrs[@]}"; do
-      for bench in ${benchs}; do
+for bench in ${benchs}; do
+  for i in ${size}; do
+    r=$i
+    for t in ${thread}; do
+      for dist in "${distrs[@]}"; do
         out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
         echo "numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}"
-        numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
+        numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 4 -a 0 -d 5000 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
       done
     done
   done

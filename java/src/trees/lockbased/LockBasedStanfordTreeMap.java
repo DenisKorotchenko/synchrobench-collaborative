@@ -40,10 +40,9 @@
 package trees.lockbased;
 
 import contention.abstractions.CompositionalMap;
+import ru.dksu.semantic.SemanticLockFair;
 
 import java.util.*;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -64,35 +63,35 @@ import java.util.function.Supplier;
  */
 public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V> {
-	private final ReadWriteLock toAllLock = new ReentrantReadWriteLock();
+    private SemanticLockFair semanticLock = new SemanticLockFair(
+            4, // R, U, bR, bU
+            new int[][]{
+                    {0, 0, 0, 1},
+                    {0, 0, 1, 1},
+                    {0, 1, 0, 1},
+                    {1, 1, 1, 1}
+            }
+    );
 
-	private <T> T withAllLock(Supplier<T> function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					return function.get();
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
+	private <T> T withAllLock(Supplier<T> function, boolean isRead) {
+        int operationType = isRead ? 0 : 1;
+        semanticLock.lock(operationType);
+        try {
+            return function.get();
+        } finally {
+            semanticLock.unlock(operationType);
+        }
 	}
 
-	private void withAllLock(Runnable function) {
-		while (true) {
-			if (toAllLock.readLock().tryLock()) {
-				try {
-					function.run();
-					return;
-				} finally {
-					toAllLock.readLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
+	private void withAllLock(Runnable function, boolean isRead) {
+        int operationType = isRead ? 0 : 1;
+        semanticLock.lock(operationType);
+        try {
+            function.run();
+            return;
+        } finally {
+            semanticLock.unlock(operationType);
+        }
 	}
 	// public class OptTreeMap<K,V> extends AbstractMap<K,V> implements
 	// ConcurrentMap<K,V> {
@@ -335,7 +334,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 				rootHolder.height = 1;
 				rootHolder.right = null;
 			}
-		});
+		}, false);
 	}
 
 	public Comparator<? super K> comparator() {
@@ -710,7 +709,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 					}
 				}
 			}
-		});
+		}, false);
 	}
 
 	private boolean attemptInsertIntoEmpty(final K key, final Object vOpt) {
@@ -989,7 +988,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 					}
 				}
 			}
-		});
+		}, true);
 	}
 
 	/** Optimistic failure is returned as null. */
@@ -1851,202 +1850,192 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 
 	public ArrayList<Entry<K, V>> snapshot() {
-		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
-				try {
-					ArrayList<Entry<K, V>> result = new ArrayList<>();
-					Queue<Node<K, V>> q = new ArrayDeque<>();
-					q.add(rootHolder);
-					while (!q.isEmpty()) {
-						try {
-							var current = q.poll();
-							if (!(current.vOpt == SpecialNull || current.vOpt == null)) {
-								try {
-									result.add(new SimpleImmutableEntry<K, V>(current.key, (V) current.vOpt));
-								} catch (Throwable ignored) {
-								}
-							}
-							var left = current.left;
-							if (left != null) {
-								q.add(left);
-							}
-							var right = current.right;
-							if (right != null) {
-								q.add(right);
-							}
-						} catch (Throwable ignored) {
-						}
-					}
-					return result;
-				} finally {
-					toAllLock.writeLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
+        semanticLock.lock(2);
+        try {
+            ArrayList<Entry<K, V>> result = new ArrayList<>();
+            Queue<Node<K, V>> q = new ArrayDeque<>();
+            q.add(rootHolder);
+            while (!q.isEmpty()) {
+                try {
+                    var current = q.poll();
+                    if (!(current.vOpt == SpecialNull || current.vOpt == null)) {
+                        try {
+                            result.add(new SimpleImmutableEntry<K, V>(current.key, (V) current.vOpt));
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                    var left = current.left;
+                    if (left != null) {
+                        q.add(left);
+                    }
+                    var right = current.right;
+                    if (right != null) {
+                        q.add(right);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            return result;
+        } finally {
+            semanticLock.unlock(2);
+        }
 	}
 
 	public V reduce(
 			V start,
 			BiFunction<V, V, V> function
 	) {
-		while (true) {
-			if (toAllLock.writeLock().tryLock()) {
-				try {
-					V res = start;
-					Deque<Node<K, V>> q = new ArrayDeque<>();
-					if (rootHolder != null) {
-						q.push(rootHolder);
-					}
-					while (!q.isEmpty()) {
-						var p = q.poll();
-						if (p == null) {
-							continue;
-						}
-						if (p.vOpt != null && p.vOpt != SpecialNull) {
-							res = function.apply(res, (V) p.vOpt);
-						}
-						if (p.left != null) {
-							q.push(p.left);
-						}
-						if (p.right != null) {
-							q.push(p.right);
-						}
-					}
-					return res;
-				} finally {
-					toAllLock.writeLock().unlock();
-				}
-			} else {
-				Thread.yield();
-			}
-		}
-	}
-
-	public V rangeQuery(
-			K left,
-			K right,
-			V start,
-			BiFunction<V, V, V> func
-	) {
-		final Comparable<? super K> leftK = comparable(left);
-		final Comparable<? super K> rightK = comparable(right);
-
-		final List<Node<K, V>> nodesFullIn = new LinkedList<>();
-
-		while (!toAllLock.writeLock().tryLock()) {
-            Thread.yield();
+		semanticLock.lock(2);
+        try {
+            V res = start;
+            Deque<Node<K, V>> q = new ArrayDeque<>();
+            if (rootHolder != null) {
+                q.push(rootHolder);
+            }
+            while (!q.isEmpty()) {
+                var p = q.poll();
+                if (p == null) {
+                    continue;
+                }
+                if (p.vOpt != null && p.vOpt != SpecialNull) {
+                    res = function.apply(res, (V) p.vOpt);
+                }
+                if (p.left != null) {
+                    q.push(p.left);
+                }
+                if (p.right != null) {
+                    q.push(p.right);
+                }
+            }
+            return res;
+        } finally {
+            semanticLock.unlock(2);
         }
-		var cur = rootHolder.right;
-		var result = start;
-		try {
-			while (cur != null && cur.key != null) {
-				while (!cur.changeLock) {
-					Thread.yield();
-				}
-				if (rightK.compareTo(cur.key) < 0) {
-					cur = cur.left;
-				} else if (leftK.compareTo(cur.key) > 0) {
-					cur = cur.right;
-				} else {
-					break;
-				}
-			}
-			if (cur == null) {
-				return start;
-			}
-			var v = (V) cur.vOpt;
-			if (v != null) {
-				result = func.apply(result, v);
-			}
-			var leftCur = cur.left;
-			while (leftCur != null && leftCur.key != null) {
-				while (!leftCur.changeLock) {
-					Thread.yield();
-				}
-				if (leftK.compareTo(leftCur.key) == 0) {
-					nodesFullIn.add(leftCur.right);
-					v = (V) leftCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					break;
-				}
-				if (leftK.compareTo(leftCur.key) < 0) {
-					nodesFullIn.add(leftCur.right);
-					v = (V) leftCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					leftCur = leftCur.left;
-				} else {
-					leftCur = leftCur.right;
-				}
-			}
-			var rightCur = cur.right;
-			while (rightCur != null && rightCur.key != null) {
-				while (!rightCur.changeLock) {
-					Thread.yield();
-				}
-				if (rightK.compareTo(rightCur.key) == 0) {
-					nodesFullIn.add(rightCur.left);
-					v = (V) rightCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					break;
-				}
-				if (rightK.compareTo(rightCur.key) > 0) {
-					nodesFullIn.add(rightCur.left);
-					v = (V) rightCur.vOpt;
-					if (v != null) {
-						result = func.apply(result, v);
-					}
-					rightCur = rightCur.right;
-				} else {
-					rightCur = rightCur.left;
-				}
-			}
-
-			for (var tV : nodesFullIn) {
-				if (tV != null) {
-					tV.changeLock = false;
-				}
-			}
-		} finally {
-			toAllLock.writeLock().unlock();
-		}
-
-		Queue<Node<K, V>> q = new ArrayDeque<>();
-		for (var node : nodesFullIn) {
-			if (node != null) {
-				q.add(node);
-			}
-		}
-
-		while (!q.isEmpty()) {
-			var p = q.poll();
-			if (p == null) {
-				continue;
-			}
-			if (p.vOpt != null && p.vOpt != SpecialNull) {
-				result = func.apply(result, (V) p.vOpt);
-			}
-			if (p.left != null) {
-				q.add(p.left);
-			}
-			if (p.right != null) {
-				q.add(p.right);
-			}
-		}
-
-		for (var node : nodesFullIn) {
-			if (node != null) {
-				node.changeLock = true;
-			}
-		}
-
-		return result;
 	}
+
+//	public V rangeQuery(
+//			K left,
+//			K right,
+//			V start,
+//			BiFunction<V, V, V> func
+//	) {
+//		final Comparable<? super K> leftK = comparable(left);
+//		final Comparable<? super K> rightK = comparable(right);
+//
+//		final List<Node<K, V>> nodesFullIn = new LinkedList<>();
+//
+//		while (!toAllLock.writeLock().tryLock()) {
+//            Thread.yield();
+//        }
+//		var cur = rootHolder.right;
+//		var result = start;
+//		try {
+//			while (cur != null && cur.key != null) {
+//				while (!cur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (rightK.compareTo(cur.key) < 0) {
+//					cur = cur.left;
+//				} else if (leftK.compareTo(cur.key) > 0) {
+//					cur = cur.right;
+//				} else {
+//					break;
+//				}
+//			}
+//			if (cur == null) {
+//				return start;
+//			}
+//			var v = (V) cur.vOpt;
+//			if (v != null) {
+//				result = func.apply(result, v);
+//			}
+//			var leftCur = cur.left;
+//			while (leftCur != null && leftCur.key != null) {
+//				while (!leftCur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (leftK.compareTo(leftCur.key) == 0) {
+//					nodesFullIn.add(leftCur.right);
+//					v = (V) leftCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					break;
+//				}
+//				if (leftK.compareTo(leftCur.key) < 0) {
+//					nodesFullIn.add(leftCur.right);
+//					v = (V) leftCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					leftCur = leftCur.left;
+//				} else {
+//					leftCur = leftCur.right;
+//				}
+//			}
+//			var rightCur = cur.right;
+//			while (rightCur != null && rightCur.key != null) {
+//				while (!rightCur.changeLock) {
+//					Thread.yield();
+//				}
+//				if (rightK.compareTo(rightCur.key) == 0) {
+//					nodesFullIn.add(rightCur.left);
+//					v = (V) rightCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					break;
+//				}
+//				if (rightK.compareTo(rightCur.key) > 0) {
+//					nodesFullIn.add(rightCur.left);
+//					v = (V) rightCur.vOpt;
+//					if (v != null) {
+//						result = func.apply(result, v);
+//					}
+//					rightCur = rightCur.right;
+//				} else {
+//					rightCur = rightCur.left;
+//				}
+//			}
+//
+//			for (var tV : nodesFullIn) {
+//				if (tV != null) {
+//					tV.changeLock = false;
+//				}
+//			}
+//		} finally {
+//			toAllLock.writeLock().unlock();
+//		}
+//
+//		Queue<Node<K, V>> q = new ArrayDeque<>();
+//		for (var node : nodesFullIn) {
+//			if (node != null) {
+//				q.add(node);
+//			}
+//		}
+//
+//		while (!q.isEmpty()) {
+//			var p = q.poll();
+//			if (p == null) {
+//				continue;
+//			}
+//			if (p.vOpt != null && p.vOpt != SpecialNull) {
+//				result = func.apply(result, (V) p.vOpt);
+//			}
+//			if (p.left != null) {
+//				q.add(p.left);
+//			}
+//			if (p.right != null) {
+//				q.add(p.right);
+//			}
+//		}
+//
+//		for (var node : nodesFullIn) {
+//			if (node != null) {
+//				node.changeLock = true;
+//			}
+//		}
+//
+//		return result;
+//	}
 }
