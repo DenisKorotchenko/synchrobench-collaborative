@@ -120,7 +120,7 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 				} catch (Exception e) {
 					this.failures++;
 				}
-			} else { // 4. cap
+			} else { // 4. sum
                 try {
                     bench.sum();
                     numSum++;

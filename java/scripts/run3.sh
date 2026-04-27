@@ -1,10 +1,10 @@
 #!/bin/bash
 
-thread="1 2 4 8 16 24 31"
+thread="1 2 4 8 16 31"
 # thread="32"
 # thread="1 4 8"
-size="4194304"
-#size="67108864"
+#size="4194304"
+size="67108864"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -24,18 +24,22 @@ size="4194304"
 #benchs="ru.dksu.semantic.TestStructure ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureShortLong ru.dksu.semantic.TestStructureShortLongRW"
 # for s in ${snapshots}; do
 #benchs="ru.dksu.semantic.TestStructure"# ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
-benchs="ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL3 ru.dksu.semantic.ExtendedMapSL ru.dksu.semantic.ExtendedMapNoLock"
-for bench in ${benchs}; do
-  for t in ${thread}; do
-    # for write in ${writes}; do
+#benchs="ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL3 ru.dksu.semantic.ExtendedMapSL ru.dksu.semantic.ExtendedMapNoLock"
+benchs="trees.lockbased.IntegerCollaborativeHelperLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
-      # u=$((((100-$s)*$write)/100))
-    for i in ${size}; do
-      # r=$((i*2))
-      r=$i
-      out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
-      echo "numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution 5 5 80 --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}"
-      numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution "5 5 80" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
+distrs=(
+  "\"49 49 2\""
+)
+
+for i in ${size}; do
+  r=$i
+  for t in ${thread}; do
+    for dist in "${distrs[@]}"; do
+      for bench in ${benchs}; do
+        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
+        echo "numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}"
+        numactl -p 0 taskset -c 0-15,64-79 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W 5 -a 0 -d 7500 -t ${t} -i ${i} -r ${r} -n 5 -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/results-compare-simple.csv >> ${out}
+      done
     done
   done
 done
