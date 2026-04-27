@@ -39,16 +39,23 @@
 
 package trees.lockbased;
 
-public class IntegerLockBasedStanfordTreeMap extends LockBasedStanfordTreeMap<Integer, Integer> {
-	@Override
-	public int size() {
-		return reduce(0, Integer::sum);
-	}
+import ru.dksu.semantic.ICollaborativeMap;
 
-	@Override
-	public int range(Integer k1, Integer k2) {
-		Integer a = Integer.min(k1, k2);
-		Integer b = Integer.max(k1, k2);
-		return this.rangeQuery(a, b, 0, Integer::sum);
-	}
+public class IntegerLockBasedStanfordTreeMap extends LockBasedStanfordTreeMap<Integer, Integer> implements ICollaborativeMap {
+    @Override
+    public Integer sum() {
+        return reduce(0, Integer::sum);
+    }
+//	@Override
+//	public int size() {
+//		return reduce(0, Integer::sum);
+//	}
+//
+//	@Override
+//	public int range(Integer k1, Integer k2) {
+//		Integer a = Integer.min(k1, k2);
+//		Integer b = Integer.max(k1, k2);
+//		return this.rangeQuery(a, b, 0, Integer::sum);
+//	}
+
 }
