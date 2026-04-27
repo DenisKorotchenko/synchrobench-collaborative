@@ -22,7 +22,7 @@ public class SemanticLock {
                 false);
     }
 
-    private final boolean fairness;
+    public final boolean fairness;
 
     public SemanticLock(
             int operationsNumber,
@@ -45,7 +45,7 @@ public class SemanticLock {
     }
 
 
-    private boolean tryLock(int operationNumber) {
+    public boolean tryLock(int operationNumber) {
         if (fairness && threadsQueue.peek() != Thread.currentThread().getId()) {
             return false;
         }
@@ -72,7 +72,7 @@ public class SemanticLock {
         return true;
     }
 
-    private final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
+    public final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
 
     public void lock(int operationNumber) {
         if (fairness) {

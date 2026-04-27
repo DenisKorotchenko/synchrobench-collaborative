@@ -15,6 +15,7 @@ import contention.abstractions.CompositionalMap;
 import contention.abstractions.CompositionalSortedSet;
 import contention.abstractions.MaintenanceAlg;
 import ru.dksu.semantic.ExtendedMap;
+import ru.dksu.semantic.ICollaborativeMap;
 import ru.dksu.semantic.ITestStructure;
 
 /**
@@ -29,7 +30,7 @@ public class Test {
 	public static final String VERSION = "11-17-2014";
 
 	public enum Type {
-	    INTSET, MAP, SORTEDSET, TEST, TESTMAP
+	    INTSET, MAP, SORTEDSET, TEST, TESTMAP, TEST_COLLABORATIVE_MAP
 	}
 
 	/** The array of threads executing the benchmark */
@@ -40,6 +41,7 @@ public class Test {
 	private ThreadSortedSetLoop[] threadLoopsSSet;
 	private TestThreadLoop[] testThreadLoops;
     private TestMapThreadLoop[] testMapThreadLoops;
+    private TestICollaborativeMapThreadLoop[] testICollaborativeMapThreadLoops;
 	/** The observed duration of the benchmark */
 	private double elapsedTime;
 	/** The throughput */
@@ -68,6 +70,7 @@ public class Test {
 	private CompositionalSortedSet<Integer> sortedBench = null;
 	private CompositionalMap<Integer, Integer> mapBench = null;
     private ExtendedMap testMapBench = null;
+    private ICollaborativeMap testCollaborativeMapBench = null;
 	ConcurrentHashMap<Integer, Integer> map = null;
 	/** The instance of the benchmark */
 	/** The benchmark methods */
@@ -113,6 +116,11 @@ public class Test {
                     i--;
                 }
                 break;
+            case TEST_COLLABORATIVE_MAP:
+                if (testCollaborativeMapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
+                    i--;
+                }
+                break;
 			default:
 				System.err.println("Wrong benchmark type");
 				System.exit(0);
@@ -146,6 +154,13 @@ public class Test {
                 Constructor<?> c = benchClass.getConstructor();
                 testMapBench = (ExtendedMap) c.newInstance();
                 benchType = Type.TESTMAP;
+                return;
+            }
+            if (ICollaborativeMap.class.isAssignableFrom((Class<?>) benchClass)) {
+                Constructor<?> c = benchClass.getConstructor();
+                testCollaborativeMapBench = (ICollaborativeMap) c.newInstance();
+                benchType = Type.TEST_COLLABORATIVE_MAP;
+                return;
             }
 			Constructor<CompositionalMap<Integer, Integer>> c = benchClass
 					.getConstructor();
@@ -216,6 +231,14 @@ public class Test {
                     threads[threadNum] = new Thread(testMapThreadLoops[threadNum]);
                 }
                 break;
+            case Type.TEST_COLLABORATIVE_MAP:
+                testICollaborativeMapThreadLoops = new TestICollaborativeMapThreadLoop[Parameters.numThreads];
+                threads = new Thread[Parameters.numThreads];
+                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                    testICollaborativeMapThreadLoops[threadNum] = new TestICollaborativeMapThreadLoop(threadNum, testCollaborativeMapBench, methods);
+                    threads[threadNum] = new Thread(testICollaborativeMapThreadLoops[threadNum]);
+                }
+                break;
         }
 	}
 
@@ -276,6 +299,11 @@ public class Test {
                 for (TestMapThreadLoop threadLoop: testMapThreadLoops) {
                     threadLoop.stopThread();
                 }
+                break;
+            case TEST_COLLABORATIVE_MAP:
+                for (TestICollaborativeMapThreadLoop threadLoop: testICollaborativeMapThreadLoops) {
+                    threadLoop.stopThread();
+                }
 			}
 		}
 		for (Thread thread : threads)
@@ -301,6 +329,9 @@ public class Test {
 			break;
         case TESTMAP:
             testMapBench.clear();
+            break;
+        case TEST_COLLABORATIVE_MAP:
+            testCollaborativeMapBench.clear();
             break;
 		}
 	}
@@ -331,14 +362,21 @@ public class Test {
 		switch(test.benchType) {
 			case INTSET:
 				assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+                break;
 			case MAP:
 				assert test.mapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+                break;
 			case SORTEDSET:
 				assert test.sortedBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+                break;
 			case TEST:
 				assert true;
             case TESTMAP:
                 assert test.testMapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+                break;
+            case TEST_COLLABORATIVE_MAP:
+                assert test.testCollaborativeMapBench.isEmpty() : "Warmup corrupted the data structure, rerun with -W 0.";
+                break;
 		}
 
 		// running the bench
@@ -384,6 +422,8 @@ public class Test {
 					test.printTestStats();
                 case TESTMAP:
                     test.printTestMapStats();
+                case TEST_COLLABORATIVE_MAP:
+                    test.printTestCollaborativeMapStats();
 			}
 
 			if (Parameters.detailedStats)
@@ -901,7 +941,59 @@ public class Test {
                 + " %)");
     }
 
-	/**
+    private void printTestCollaborativeMapStats() {
+        int s = 0;
+        int _total = 0;
+        int _numModify = 0;
+        int _numGet = 0;
+        int _numSum = 0;
+        int _numSnapshot = 0;
+        int _failure = 0;
+
+        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+            _failure += testICollaborativeMapThreadLoops[threadNum].failures;
+            _total += testICollaborativeMapThreadLoops[threadNum].total;
+            _numModify += testICollaborativeMapThreadLoops[threadNum].numModify;
+            _numGet += testICollaborativeMapThreadLoops[threadNum].numGet;
+            _numSum += testICollaborativeMapThreadLoops[threadNum].numSum;
+            _numSnapshot += testICollaborativeMapThreadLoops[threadNum].numSnapshot;
+        }
+        throughput[currentIteration] = ((double) _total / elapsedTime);
+        printLine('-');
+        System.out.println("Benchmark statistics");
+        printLine('-');
+//		System.out.println("  Average traversal length: \t"
+//				+ (double) nodesTraversed / (double) getCount);
+//		System.out.println("  Struct Modifications:     \t" + structMods);
+        System.out.println("  Throughput (ops/s):       \t" + throughput[currentIteration]);
+        System.out.println("  Elapsed time (s):         \t" + elapsedTime);
+        System.out.println("  Operations:               \t" + _total
+                + "\t( 100 %)");
+//		System.out.println("    effective updates:     \t"
+//				+ (numAdd + numRemove + numAddAll + numRemoveAll)
+//				+ "\t( "
+//				+ formatDouble(((double) (numAdd + numRemove
+//				+ numAddAll + numRemoveAll) * 100)
+//				/ (double) total) + " %)");
+        System.out.println("    |--modify successful:     \t" + _numModify + "\t( "
+                + formatDouble(((double) _numModify / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--get succ.:       \t" + _numGet + "\t( "
+                + formatDouble(((double) _numGet / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--sum succ.:       \t" + _numSum + "\t( "
+                + formatDouble(((double) _numSum / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--snapshot succ.:       \t" + _numSnapshot + "\t( "
+                + formatDouble(((double) _numSnapshot / (double) _total) * 100)
+                + " %)");
+        System.out.println("    unsuccessful ops:      \t" + _failure + "\t( "
+                + formatDouble(((double) _failure / (double) _total) * 100)
+                + " %)");
+    }
+
+
+    /**
 	 * Detailed Warmup TM Statistics
 	 */
 	private int numCommits = 0;
@@ -986,6 +1078,10 @@ public class Test {
                 break;
             case TESTMAP:
                 testMapThreadLoops[threadNum].clearCounters();
+                break;
+            case TEST_COLLABORATIVE_MAP:
+                testICollaborativeMapThreadLoops[threadNum].clearCounters();
+                break;
 			}
 
 		}
