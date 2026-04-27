@@ -420,10 +420,13 @@ public class Test {
 					break;
 				case TEST:
 					test.printTestStats();
+                    break;
                 case TESTMAP:
                     test.printTestMapStats();
+                    break;
                 case TEST_COLLABORATIVE_MAP:
                     test.printTestCollaborativeMapStats();
+                    break;
 			}
 
 			if (Parameters.detailedStats)

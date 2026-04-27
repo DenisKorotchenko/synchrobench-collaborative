@@ -91,13 +91,6 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 				try {
                     bench.get(newInt);
                     numGet++;
-                    if (rand.nextBoolean()) {
-                        int value = rand.nextInt(-Parameters.range, Parameters.range);
-                        bench.put(newInt, value);
-                    } else {
-                        bench.remove(newInt);
-                    }
-					numModify++;
 				} catch (Exception e) {
 					this.failures++;
 				}
