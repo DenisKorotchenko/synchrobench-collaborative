@@ -1,6 +1,7 @@
 package contention.benchmark;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.Random;
 
 import ru.dksu.semantic.ICollaborativeMap;
@@ -62,11 +63,12 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 		cdf[3] = 1000;
 
 		if (myThreadNum == 0) {
-			System.out.println("Distribution: ");
+			System.out.print(LocalDateTime.now() + " Distribution: ");
 			for (int _cdf : cdf) {
 				System.out.print(_cdf);
-				System.out.println(" ");
+				System.out.print(" ");
 			}
+            System.out.println();
 		}
 //		assert (Parameters.numWrites >= Parameters.numWriteAlls);
 //		cdf[0] = 10 * Parameters.numWriteAlls;
@@ -83,7 +85,7 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 	}
 
 	public void run() {
-
+        System.out.println(LocalDateTime.now() + " Start run");
 		while (!stop) {
 			Integer newInt = rand.nextInt(Parameters.range - 128);
 			int coin = rand.nextInt(1000);
@@ -127,6 +129,6 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 		}
 		// System.out.println(numAdd + " " + numRemove + " " + failures);
 
-		System.out.println("Thread #" + myThreadNum + " finished.");
+		System.out.println(LocalDateTime.now() + " Thread #" + myThreadNum + " finished.");
 	}
 }

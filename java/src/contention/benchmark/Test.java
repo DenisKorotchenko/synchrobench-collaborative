@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.Locale;
@@ -270,7 +271,8 @@ public class Test {
 			throws InterruptedException {
 		long startTime;
 		fill(Parameters.range, Parameters.size);
-		Thread.sleep(5000);
+        System.out.println(LocalDateTime.now().toString() + " filled");
+		Thread.sleep(1000);
 		startTime = System.currentTimeMillis();
 		for (Thread thread : threads)
 			thread.start();
@@ -344,19 +346,29 @@ public class Test {
 		// warming up the JVM
 		if (Parameters.warmUp != 0) {
 			try {
+                System.out.println(LocalDateTime.now().toString() + " Before init");
 				test.initThreads();
+                System.out.println(LocalDateTime.now().toString() + " After init");
+
 			} catch (Exception e) {
 				System.err.println("Cannot launch operations.");
 				e.printStackTrace();
 			}
 			test.execute(Parameters.warmUp * 1000, true);
+            System.out.println(LocalDateTime.now().toString() + " executed");
 			// give time to the JIT
 			Thread.sleep(100);
+            System.out.println(LocalDateTime.now().toString() + " sleeped");
 			if (Parameters.detailedStats)
 				test.recordPreliminaryStats();
+            System.out.println(LocalDateTime.now().toString() + " stats");
 			test.clear();
+            System.out.println(LocalDateTime.now().toString() + " cleared");
 			test.resetStats();
+            System.out.println(LocalDateTime.now().toString() + " resets");
 		}
+
+        System.out.println(LocalDateTime.now().toString() + " Finish warmup");
 
 		// check that the structure is empty
 		switch(test.benchType) {
