@@ -78,7 +78,7 @@ import contention.abstractions.CompositionalMap;
 public class CollaborativeHelperFairLockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V> {
 	private final CollaborativeHelperFair collaborativeHelper = new CollaborativeHelperFair();
-	private final int MAX_LEVEL = 2;
+	private final int MAX_LEVEL = 8;
 
 	// public class OptTreeMap<K,V> extends AbstractMap<K,V> implements
 	// ConcurrentMap<K,V> {
