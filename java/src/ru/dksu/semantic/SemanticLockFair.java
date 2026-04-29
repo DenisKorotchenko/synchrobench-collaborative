@@ -43,14 +43,14 @@ public class SemanticLockFair {
         }
     }
 
-    private boolean fairnessCheck(int operationsNumber) {
+    private boolean fairnessCheck(OperationRequest operation) {
         var iterator = fairnessQueue.iterator();
         while (iterator.hasNext()) {
             OperationRequest next = iterator.next();
             if (next.threadId == Thread.currentThread().threadId()) {
                 return true;
             }
-            if (conflicts[next.operationNumber][operationsNumber] == 1) {
+            if (conflicts[next.operationNumber][operation.operationNumber] == 1) {
                 return false;
             }
         }
@@ -58,7 +58,7 @@ public class SemanticLockFair {
     }
 
     public boolean tryLock(OperationRequest operationRequest) {
-        if (fairness && fairnessCheck(operationRequest.operationNumber)) {
+        if (fairness && !fairnessCheck(operationRequest)) {
             return false;
         }
         int value = this.lockCounts[operationRequest.operationNumber].incrementAndGet();
