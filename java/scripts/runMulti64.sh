@@ -82,7 +82,7 @@ distrs=(
   "100 0 0"
 )
 
-iterations=10
+iterations=6
 W=8
 d=10
 
