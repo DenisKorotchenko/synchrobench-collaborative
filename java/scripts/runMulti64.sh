@@ -108,7 +108,7 @@ for dist in "${distrs[@]}"; do
     for t in ${thread}; do
       for bench in ${benchs}; do
         current=$((current+1))
-        out=/home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-${dist}.log
+        out=/home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}.log
         date
         echo "Experiment $current of $count, part $part / $parts"
         echo "numactl --physcpubind=0-63 --p 0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/res.csv >> ${out}"
