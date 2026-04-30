@@ -108,11 +108,11 @@ for dist in "${distrs[@]}"; do
     for t in ${thread}; do
       for bench in ${benchs}; do
         current=$((current+1))
-        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
+        out=/home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-${dist}.log
         date
         echo "Experiment $current of $count, part $part / $parts"
-        echo "numactl --physcpubind=0-63 --p 0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
-        numactl --physcpubind=0-63 -p 0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}
+        echo "numactl --physcpubind=0-63 --p 0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        numactl --physcpubind=0-63 -p 0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/vaksenov/dkorotchenko/synchrobench-collaborative/java/output/res.csv >> ${out}
       done
     done
   done
