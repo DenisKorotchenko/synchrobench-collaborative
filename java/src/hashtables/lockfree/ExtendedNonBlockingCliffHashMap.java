@@ -233,7 +233,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
     }
 
     public Integer cap(Integer maxValue) {
-        semanticLock.lock(2);
+        semanticLock.lock(3);
         try {
             int s = 0;
             for (int i = 0; i < len(_kvs); i++) {
@@ -254,7 +254,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
             }
             return s;
         } finally {
-            semanticLock.unlock(2);
+            semanticLock.unlock(3);
         }
     }
 

@@ -104,9 +104,15 @@ distrs=(
   "92 0 4"
 )
 
-iterations=6
-W=8
-d=10
+distrs=(
+  "0 0 0 0"
+  "50 0 0 0"
+)
+
+
+iterations=5
+W=10
+d=30
 
 thread="1 2 4 8 16 32 63"
 count=0
