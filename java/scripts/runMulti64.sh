@@ -108,9 +108,14 @@ distrs=(
   "46 46 0 4"
 )
 
+distr=(
+  "0 0 0 0"
+  "50 0 0 0"
+)
+
 iterations=10
 W=8
-d=20
+d=10
 
 thread="1 2 4 8 16 32 63"
 count=0
