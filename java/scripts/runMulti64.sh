@@ -108,9 +108,9 @@ distrs=(
   "46 46 0 4"
 )
 
-iterations=6
+iterations=10
 W=8
-d=10
+d=20
 
 thread="1 2 4 8 16 32 63"
 count=0
