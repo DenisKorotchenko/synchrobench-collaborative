@@ -46,6 +46,16 @@ public class IntegerLockBasedStanfordTreeMap extends LockBasedStanfordTreeMap<In
     public Integer sum() {
         return reduce(0, Integer::sum);
     }
+
+    @Override
+    public Integer rangeSum(Integer left, Integer right) {
+        return 0;
+    }
+
+    @Override
+    public Integer rangeCap(Integer left, Integer right, Integer maxValue) {
+        return 0;
+    }
 //	@Override
 //	public int size() {
 //		return reduce(0, Integer::sum);
