@@ -44,6 +44,7 @@ import java.util.AbstractSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.Iterator;
@@ -52,6 +53,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -2136,6 +2139,228 @@ public class CollaborativeHelperFairLockBasedStanfordTreeMap<K, V> extends Abstr
                         res[0] += r;
                     }
                     return (V) res[0];
+                },
+                false
+        );
+    }
+
+    public V rangeQuery(
+            K left,
+            K right,
+            V start,
+            BiFunction<V, V, V> func
+    ) {
+        final Comparable<? super K> leftK = comparable(left);
+        final Comparable<? super K> rightK = comparable(right);
+
+        final List<Node<K, V>> nodesFullIn = new LinkedList<>();
+
+        final V[] result = (V[]) new Object[]{start};
+        ArrayList<V> results = new ArrayList<>();
+
+        Supplier<V> reduce = () -> {
+            for (var tResult: results) {
+                result[0] = func.apply(result[0], tResult);
+            }
+            return result[0];
+        };
+
+        return collaborativeHelper.collaborativeOperation(
+                new Supplier<Collection<CollaborativeTask>>() {
+
+                    @Override
+                    public Collection<CollaborativeTask> get() {
+                        var cur = rootHolder.right;
+
+                        while (cur != null && cur.key != null) {
+                            if (rightK.compareTo(cur.key) < 0) {
+                                cur = cur.left;
+                            } else if (leftK.compareTo(cur.key) > 0) {
+                                cur = cur.right;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (cur == null) {
+                            return Collections.emptyList();
+                        }
+                        var v = (V) cur.vOpt;
+                        if (v != null) {
+                            result[0] = func.apply(result[0], v);
+                        }
+                        var leftCur = cur.left;
+                        while (leftCur != null && leftCur.key != null) {
+                            if (leftK.compareTo(leftCur.key) == 0) {
+                                nodesFullIn.add(leftCur.right);
+                                v = (V) leftCur.vOpt;
+                                if (v != null) {
+                                    result[0] = func.apply(result[0], v);
+                                }
+                                break;
+                            }
+                            if (leftK.compareTo(leftCur.key) < 0) {
+                                nodesFullIn.add(leftCur.right);
+                                v = (V) leftCur.vOpt;
+                                if (v != null) {
+                                    result[0] = func.apply(result[0], v);
+                                }
+                                leftCur = leftCur.left;
+                            } else {
+                                leftCur = leftCur.right;
+                            }
+                        }
+                        var rightCur = cur.right;
+                        while (rightCur != null && rightCur.key != null) {
+                            if (rightK.compareTo(rightCur.key) == 0) {
+                                nodesFullIn.add(rightCur.left);
+                                v = (V) rightCur.vOpt;
+                                if (v != null) {
+                                    result[0] = func.apply(result[0], v);
+                                }
+                                break;
+                            }
+                            if (rightK.compareTo(rightCur.key) > 0) {
+                                nodesFullIn.add(rightCur.left);
+                                v = (V) rightCur.vOpt;
+                                if (v != null) {
+                                    result[0] = func.apply(result[0], v);
+                                }
+                                rightCur = rightCur.right;
+                            } else {
+                                rightCur = rightCur.left;
+                            }
+                        }
+
+                        List<CollaborativeTask> tasks = new LinkedList<>();
+                        int resultIndex = 0;
+                        for (var node : nodesFullIn) {
+                            results.add(start);
+                            var task = new ReduceCollaborativeTask(
+                                    start,
+                                    func,
+                                    results,
+                                    resultIndex++,
+                                    node
+                            );
+                            tasks.add(task);
+                        }
+                        return tasks;
+                    }
+                },
+                reduce,
+                true
+        );
+    }
+
+    public Integer rangeCap(
+            K left,
+            K right,
+            Integer maxValue
+    ) {
+        final Comparable<? super K> leftK = comparable(left);
+        final Comparable<? super K> rightK = comparable(right);
+
+        final List<Node<K, V>> nodesFullIn = new LinkedList<>();
+
+        final int[] result = {0};
+        ArrayList<Integer> results = new ArrayList<>();
+
+        return collaborativeHelper.collaborativeOperation(
+                () -> {
+                    var cur = rootHolder.right;
+                    while (cur != null && cur.key != null) {
+                        if (rightK.compareTo(cur.key) < 0) {
+                            cur = cur.left;
+                        } else if (leftK.compareTo(cur.key) > 0) {
+                            cur = cur.right;
+                        } else {
+                            break;
+                        }
+                    }
+                    if (cur == null) {
+                        return Collections.emptyList();
+                    }
+                    var v = (V) cur.vOpt;
+                    if (v != null) {
+                        if ((Integer) v > maxValue) {
+                            cur.vOpt = maxValue;
+                            result[0]++;
+                        }
+                    }
+                    var leftCur = cur.left;
+                    while (leftCur != null && leftCur.key != null) {
+                        if (leftK.compareTo(leftCur.key) == 0) {
+                            nodesFullIn.add(leftCur.right);
+                            v = (V) leftCur.vOpt;
+                            if (v != null) {
+                                if ((Integer) v > maxValue) {
+                                    leftCur.vOpt = maxValue;
+                                    result[0]++;
+                                }
+                            }
+                            break;
+                        }
+                        if (leftK.compareTo(leftCur.key) < 0) {
+                            nodesFullIn.add(leftCur.right);
+                            v = (V) leftCur.vOpt;
+                            if (v != null) {
+                                if ((Integer) v > maxValue) {
+                                    leftCur.vOpt = maxValue;
+                                    result[0]++;
+                                }
+                            }
+                            leftCur = leftCur.left;
+                        } else {
+                            leftCur = leftCur.right;
+                        }
+                    }
+                    var rightCur = cur.right;
+                    while (rightCur != null && rightCur.key != null) {
+                        if (rightK.compareTo(rightCur.key) == 0) {
+                            nodesFullIn.add(rightCur.left);
+                            v = (V) rightCur.vOpt;
+                            if (v != null) {
+                                if ((Integer) v > maxValue) {
+                                    rightCur.vOpt = maxValue;
+                                    result[0]++;
+                                }
+                            }
+                            break;
+                        }
+                        if (rightK.compareTo(rightCur.key) > 0) {
+                            nodesFullIn.add(rightCur.left);
+                            v = (V) rightCur.vOpt;
+                            if (v != null) {
+                                if ((Integer) v > maxValue) {
+                                    rightCur.vOpt = maxValue;
+                                    result[0]++;
+                                }
+                            }
+                            rightCur = rightCur.right;
+                        } else {
+                            rightCur = rightCur.left;
+                        }
+                    }
+
+                    int resultIndex = 0;
+                    ArrayList<CollaborativeTask> tasks = new ArrayList<>();
+                    for (var node : nodesFullIn) {
+                        results.add(0);
+                        var task = new CapCollaborativeTask(
+                                results,
+                                resultIndex++,
+                                node,
+                                maxValue
+                        );
+                        tasks.add(task);
+                    }
+                    return tasks;
+                },
+                () -> {
+                    for (var tResult: results) {
+                        result[0] += tResult;
+                    }
+                    return result[0];
                 },
                 false
         );

@@ -41,7 +41,7 @@ package trees.lockbased;
 
 import ru.dksu.semantic.ICollaborativeMap;
 
-public class IntegerCollaborativeHelperFairLockBasedStanfordTreeMap extends CollaborativeHelperFairLockBasedStanfordTreeMap<Integer, Integer> implements ICollaborativeMap {
+public class IntegerRangeCollaborativeHelperFairLockBasedStanfordTreeMap extends RangeCollaborativeHelperFairLockBasedStanfordTreeMap<Integer, Integer> implements ICollaborativeMap {
     @Override
     public Integer sum() {
         return this.reduce(0, Integer::sum);
@@ -51,6 +51,4 @@ public class IntegerCollaborativeHelperFairLockBasedStanfordTreeMap extends Coll
     public Integer rangeSum(Integer left, Integer right) {
         return this.rangeQuery(left, right, 0, Integer::sum);
     }
-
-
 }

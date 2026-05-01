@@ -121,7 +121,8 @@ public class Test {
     }
 
 	public void fill(final int range, final long size) {
-        if (Parameters.benchClassName.startsWith("hashtables.lockfree")) {
+//        if (Parameters.benchClassName.startsWith("hashtables.lockfree")) {
+        if (benchType == Type.TEST_COLLABORATIVE_MAP) {
             System.out.println("Parallel fill");
             fillPar(range, size);
             return;

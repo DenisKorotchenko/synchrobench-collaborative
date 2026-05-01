@@ -19,4 +19,14 @@ public class IntegerBaseCliffMap extends NonBlockingCliffHashMap<Integer, Intege
     public Integer cap(Integer maxValue) {
         return 0;
     }
+
+    @Override
+    public Integer rangeSum(Integer left, Integer right) {
+        return 0;
+    }
+
+    @Override
+    public Integer rangeCap(Integer left, Integer right, Integer maxValue) {
+        return 0;
+    }
 }

@@ -30,6 +30,8 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 	public long numSum = 0;
     public long numSnapshot = 0;
     public long numCap = 0;
+    public long numRangeSum = 0;
+    public long numRangeCap = 0;
 	/** The counter of the false-returning operations */
 	public long failures = 0;
 	/** The counter of the thread operations */
@@ -47,23 +49,27 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 		numSum = 0;
         numSnapshot = 0;
         numCap = 0;
+        numRangeCap = 0;
+        numRangeSum = 0;
 		failures = 0;
 		total = 0;
 	}
 
-	int[] cdf = new int[5];
+	int[] cdf = new int[7];
 
 	public TestICollaborativeMapThreadLoop(short myThreadNum,
                                            ICollaborativeMap bench, Method[] methods) {
 		this.myThreadNum = myThreadNum;
 		this.bench = bench;
 		/* initialize the method boundaries */
-		assert Parameters.distribution.length == 4;
+		assert Parameters.distribution.length == 6;
 		cdf[0] = Parameters.distribution[0] * 10;
 		cdf[1] = (Parameters.distribution[0] + Parameters.distribution[1]) * 10;
         cdf[2] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2]) * 10;
         cdf[3] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2] + Parameters.distribution[3]) * 10;
-		cdf[4] = 1000;
+		cdf[4] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2] + Parameters.distribution[3] + Parameters.distribution[4]) * 10;
+        cdf[5] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2] + Parameters.distribution[3] + Parameters.distribution[4] + Parameters.distribution[5]) * 10;
+        cdf[6] = 1000;
 
 		if (myThreadNum == 0) {
 			System.out.print(LocalDateTime.now() + " Distribution: ");
@@ -73,10 +79,6 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
 			}
             System.out.println();
 		}
-//		assert (Parameters.numWrites >= Parameters.numWriteAlls);
-//		cdf[0] = 10 * Parameters.numWriteAlls;
-//		cdf[1] = 10 * Parameters.numWrites;
-//		cdf[2] = cdf[1] + 10 * Parameters.numSnapshots;
 	}
 
 	public void stopThread() {
@@ -125,7 +127,7 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
                 } catch (Exception e) {
                     this.failures++;
                 }
-            } else { // write (cap)
+            } else if (coin < cdf[4]) { // write (cap)
                 try {
                     int value = rand.nextInt(-Parameters.range, Parameters.range);
                     bench.cap(value);
@@ -133,10 +135,25 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
                 } catch (Exception e) {
                     this.failures++;
                 }
+            } else if (coin < cdf[5]) { // range sum
+                try {
+                    bench.rangeSum(newInt, newInt + 2048);
+                    numRangeSum++;
+                } catch (Exception e) {
+                    this.failures++;
+                }
+            } else { // range cap
+                try {
+                    int value = rand.nextInt(-Parameters.range, Parameters.range);
+                    bench.rangeCap(newInt, newInt + 2048, value);
+                    numRangeCap++;
+                } catch (Exception e) {
+                    this.failures++;
+                }
             }
 			total++;
 
-			assert total == numGet + numModify + numSum + numSnapshot + numCap + failures;
+			assert total == numGet + numModify + numSum + numSnapshot + numCap + numRangeSum + numRangeCap + failures;
 		}
 		// System.out.println(numAdd + " " + numRemove + " " + failures);
 

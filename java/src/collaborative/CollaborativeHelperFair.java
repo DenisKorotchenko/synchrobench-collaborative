@@ -73,7 +73,7 @@ public class CollaborativeHelperFair {
     }
 
     private ConcurrentLinkedDeque<CollaborativeTask> emptyDeque = new ConcurrentLinkedDeque<>();
-    private ConcurrentHashMap<Long, AtomicInteger> inProgress = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<Long, AtomicInteger> inProgress = new ConcurrentHashMap<>();
 
     public void helpIfNeeded(long targetOperation) {
         long key = targetOperation;
