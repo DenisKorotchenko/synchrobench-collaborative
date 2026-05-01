@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +91,7 @@ public class Test {
 	};
 
 	public void fill(final int range, final long size) {
+        HashMap<Integer, Integer> hm = new HashMap<>();
 		for (long i = size; i > 0;) {
 			Integer v = s_random.get().nextInt(range);
 			switch(benchType) {
@@ -118,7 +120,7 @@ public class Test {
                 }
                 break;
             case TEST_COLLABORATIVE_MAP:
-                if (testCollaborativeMapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
+                if (testCollaborativeMapBench.put((Integer) v, (Integer) v) == null) {
                     i--;
                 }
                 break;
@@ -963,6 +965,7 @@ public class Test {
         int _numGet = 0;
         int _numSum = 0;
         int _numSnapshot = 0;
+        int _numCap = 0;
         int _failure = 0;
 
         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -971,6 +974,7 @@ public class Test {
             _numModify += testICollaborativeMapThreadLoops[threadNum].numModify;
             _numGet += testICollaborativeMapThreadLoops[threadNum].numGet;
             _numSum += testICollaborativeMapThreadLoops[threadNum].numSum;
+            _numCap += testICollaborativeMapThreadLoops[threadNum].numCap;
             _numSnapshot += testICollaborativeMapThreadLoops[threadNum].numSnapshot;
         }
         throughput[currentIteration] = ((double) _total / elapsedTime);
@@ -1001,6 +1005,9 @@ public class Test {
                 + " %)");
         System.out.println("    |--snapshot succ.:       \t" + _numSnapshot + "\t( "
                 + formatDouble(((double) _numSnapshot / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--cap succ.:       \t" + _numCap + "\t( "
+                + formatDouble(((double) _numCap / (double) _total) * 100)
                 + " %)");
         System.out.println("    unsuccessful ops:      \t" + _failure + "\t( "
                 + formatDouble(((double) _failure / (double) _total) * 100)

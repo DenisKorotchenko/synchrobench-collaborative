@@ -328,6 +328,87 @@ public class CollaborativeNonBlockingCliffHashMap<TypeK, TypeV> extends
         );
     }
 
+    private class CapCollaborativeTask implements CollaborativeTask {
+        int start;
+        int finish;
+        int index;
+        ArrayList<Integer> answers;
+        int maxValue;
+
+        CapCollaborativeTask(
+                int start,
+                int finish,
+                int index,
+                ArrayList<Integer> answers,
+                int maxValue
+        ) {
+            this.start = start;
+            this.finish = finish;
+            this.index = index;
+            this.answers = answers;
+            this.maxValue = maxValue;
+        }
+
+        @Override
+        public void start() {
+            int s = 0;
+            for (int i = start; i < finish; i++) {
+                TypeK k = (TypeK) key(_kvs, i);
+                if (k == null)
+                    continue;
+                Object V = val(_kvs, i);
+                if (!(V instanceof Prime)) // No copy?
+                    V = (V == TOMBSTONE) ? null : V;
+                else
+                    V = null;
+                if (V != null) {
+                    if ((Integer) V > maxValue) {
+                        _kvs[(i << 1) + 3] = maxValue;
+                        s++;
+                    }
+                }
+            }
+            answers.set(index, s);
+        }
+    }
+
+    public Integer cap(Integer maxValues) {
+        ArrayList<Integer> partial = new ArrayList<>();
+        for (int i = 0; i < LEVEL; i++) {
+            partial.add(0);
+        }
+        return collaborativeHelper.collaborativeOperation(
+                () -> {
+                    ArrayList<CollaborativeTask> tasks = new ArrayList<>();
+                    int delta = len(_kvs) / LEVEL;
+                    int start = 0;
+                    for (int i = 0; i < LEVEL; i++) {
+                        if (i == LEVEL - 1) {
+                            tasks.add(new CapCollaborativeTask(
+                                    start, len(_kvs), i,
+                                    partial, maxValues
+                            ));
+                        } else {
+                            tasks.add(new CapCollaborativeTask(
+                                    start, start+delta, i,
+                                    partial, maxValues
+                            ));
+                        }
+                        start += delta;
+                    }
+                    return tasks;
+                },
+                () -> {
+                    int s = 0;
+                    for (var p: partial) {
+                        s += p;
+                    }
+                    return s;
+                },
+                false
+        );
+    }
+
 	private static final CHM chm(Object[] kvs) {
 		return (CHM) kvs[0];
 	}

@@ -232,6 +232,32 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
         }
     }
 
+    public Integer cap(Integer maxValue) {
+        semanticLock.lock(2);
+        try {
+            int s = 0;
+            for (int i = 0; i < len(_kvs); i++) {
+                TypeK k = (TypeK) key(_kvs, i);
+                if (k == null)
+                    continue;
+                Object V = val(_kvs, i);
+                if (!(V instanceof Prime)) // No copy?
+                    V = (V == TOMBSTONE) ? null : V;
+                else
+                    V = null;
+                if (V != null) {
+                    if ((Integer) V > maxValue) {
+                        _kvs[(i << 1) + 3] = maxValue;
+                        s++;
+                    }
+                }
+            }
+            return s;
+        } finally {
+            semanticLock.unlock(2);
+        }
+    }
+
 	private static final CHM chm(Object[] kvs) {
 		return (CHM) kvs[0];
 	}

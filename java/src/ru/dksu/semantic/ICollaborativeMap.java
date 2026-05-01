@@ -6,4 +6,5 @@ import java.util.Map;
 public interface ICollaborativeMap extends Map<Integer, Integer> {
     ArrayList<Entry<Integer, Integer>> snapshot();
     Integer sum();
+    Integer cap(Integer maxValue);
 }

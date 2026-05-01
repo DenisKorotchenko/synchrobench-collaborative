@@ -2045,4 +2045,99 @@ public class CollaborativeHelperFairLockBasedStanfordTreeMap<K, V> extends Abstr
                 tasks, reduce, true
         );
 	}
+
+    private class CapCollaborativeTask implements CollaborativeTask {
+        ArrayList<Integer> results;
+        int resultIndex;
+        Node<K, V> root;
+        int maxValue;
+
+        CapCollaborativeTask(
+                ArrayList<Integer> results,
+                int resultIndex,
+                Node<K, V> root,
+                int maxValue
+        ) {
+            this.results = results;
+            this.resultIndex = resultIndex;
+            this.root = root;
+            this.maxValue = maxValue;
+        }
+
+        @Override
+        public void start() {
+            Integer res = 0;
+            Queue<Node<K, V>> q = new ArrayDeque<>();
+            if (root != null) {
+                q.add(root);
+            }
+            while (!q.isEmpty()) {
+                var p = q.poll();
+                if (p == null) {
+                    continue;
+                }
+                if (p.vOpt != null && p.vOpt != SpecialNull) {
+                    if ((Integer) p.vOpt > maxValue) {
+                        res += 1;
+                        p.vOpt = maxValue;
+                    }
+                }
+                if (p.left != null) {
+                    q.add(p.left);
+                }
+                if (p.right != null) {
+                    q.add(p.right);
+                }
+            }
+            results.set(resultIndex, res);
+        }
+    }
+
+    public V cap(Integer maxValue) {
+        ArrayList<Integer> results = new ArrayList<>();
+        final Integer[] res = {0};
+        return collaborativeHelper.collaborativeOperation(
+                () -> {
+                    List<CollaborativeTask> tasksList = new LinkedList<>();
+                    Deque<Pair<Integer, Node<K, V>>> q = new ArrayDeque<>();
+                    q.push(new Pair<>(0, rootHolder));
+                    int index = 0;
+                    for (int i = 0; i < Math.pow(2, MAX_LEVEL); i++) {
+                        results.add(0);
+                    }
+                    while (!q.isEmpty()) {
+                        var p = q.poll();
+                        if (p.getSecond() == null) {
+                            continue;
+                        }
+                        if (p.getFirst() >= MAX_LEVEL) {
+                            var task = new CapCollaborativeTask(
+                                    results,
+                                    index++,
+                                    p.getSecond(),
+                                    maxValue
+                            );
+                            tasksList.add(task);
+                            continue;
+                        }
+                        if (p.getSecond().vOpt != null && p.getSecond().vOpt != SpecialNull) {
+                            if ((Integer) p.getSecond().vOpt > maxValue) {
+                                res[0] += 1;
+                                p.getSecond().vOpt = maxValue;
+                            }
+                        }
+                        q.push(new Pair<>(p.getFirst() + 1, p.getSecond().left));
+                        q.push(new Pair<>(p.getFirst() + 1, p.getSecond().right));
+                    }
+                    return tasksList;
+                },
+                () -> {
+                    for (var r: results) {
+                        res[0] += r;
+                    }
+                    return (V) res[0];
+                },
+                false
+        );
+    }
 }

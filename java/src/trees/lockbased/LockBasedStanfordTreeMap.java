@@ -1913,6 +1913,38 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
         }
 	}
 
+    public V cap(Integer maxValue) {
+        semanticLock.lock(3);
+        try {
+            Integer res = 0;
+            Deque<Node<K, V>> q = new ArrayDeque<>();
+            if (rootHolder != null) {
+                q.push(rootHolder);
+            }
+            while (!q.isEmpty()) {
+                var p = q.poll();
+                if (p == null) {
+                    continue;
+                }
+                if (p.vOpt != null && p.vOpt != SpecialNull) {
+                    if ((Integer) p.vOpt > maxValue) {
+                        res += 1;
+                        p.vOpt = maxValue;
+                    }
+                }
+                if (p.left != null) {
+                    q.push(p.left);
+                }
+                if (p.right != null) {
+                    q.push(p.right);
+                }
+            }
+            return (V) res;
+        } finally {
+            semanticLock.unlock(3);
+        }
+    }
+
 //	public V rangeQuery(
 //			K left,
 //			K right,
