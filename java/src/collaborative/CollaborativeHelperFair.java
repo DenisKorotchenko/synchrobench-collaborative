@@ -12,10 +12,10 @@ import ru.dksu.semantic.SemanticLock;
 import ru.dksu.semantic.SemanticLockFair;
 
 public class CollaborativeHelperFair {
-    private AtomicLong counter = new AtomicLong();
+    public AtomicLong counter = new AtomicLong();
     private Random random = new Random();
 
-    private SemanticLockFair semanticLock = new SemanticLockFair(
+    public SemanticLockFair semanticLock = new SemanticLockFair(
             4, // R, U, bR, bU
             new int[][]{
                 {0, 0, 0, 1},
@@ -24,7 +24,7 @@ public class CollaborativeHelperFair {
                 {1, 1, 1, 1}
             }
     );
-    private ConcurrentHashMap<Long, ConcurrentLinkedDeque<CollaborativeTask>> tasksQueues = new ConcurrentHashMap<Long, ConcurrentLinkedDeque<CollaborativeTask>>();
+    public ConcurrentHashMap<Long, ConcurrentLinkedDeque<CollaborativeTask>> tasksQueues = new ConcurrentHashMap<Long, ConcurrentLinkedDeque<CollaborativeTask>>();
 
     public CollaborativeHelperFair() {
     }

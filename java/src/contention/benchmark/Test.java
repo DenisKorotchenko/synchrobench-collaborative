@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import contention.abstractions.CompositionalIntSet;
 import contention.abstractions.CompositionalMap;
@@ -90,7 +92,40 @@ public class Test {
 		}
 	};
 
+    private void fillPar(final int range, final long size) {
+        ArrayList<Thread> list = new ArrayList<Thread>();
+        AtomicLong j = new AtomicLong(size);
+        for (int i = 0; i < 64; i++) {
+            var t = new Thread(() -> {
+                Random rand = new Random();
+                while (true) {
+                    Integer v = rand.nextInt(range);
+                    if (testCollaborativeMapBench.put((Integer) v, (Integer) v) == null) {
+                        if (j.decrementAndGet() <= 0) {
+                            break;
+                        }
+                    }
+                }
+            });
+            list.add(t);
+            t.start();
+        }
+        for (var t: list) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        System.out.println(testCollaborativeMapBench.size());
+    }
+
 	public void fill(final int range, final long size) {
+        if (Parameters.benchClassName.startsWith("hashtables.lockfree")) {
+            System.out.println("Parallel fill");
+            fillPar(range, size);
+            return;
+        }
         HashMap<Integer, Integer> hm = new HashMap<>();
 		for (long i = size; i > 0;) {
 			Integer v = s_random.get().nextInt(range);
