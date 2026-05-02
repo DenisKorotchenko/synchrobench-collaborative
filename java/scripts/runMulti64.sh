@@ -25,7 +25,7 @@ size="4194304"
 #benchs="ru.dksu.semantic.TestStructure"# ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
 #benchs="ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL3 ru.dksu.semantic.ExtendedMapSL ru.dksu.semantic.ExtendedMapNoLock"
 benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
-#benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerRangeCollaborativeHelperFairLockBasedStanfordTreeMap"
+benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerRangeCollaborativeHelperFairLockBasedStanfordTreeMap"
 
 
 distrs=(
@@ -156,6 +156,11 @@ distrs=(
   "20 20 20 20 20 0"
   "49 49 1 0 1 0"
   "0 50 25 0 25 0"
+)
+
+distrs=(
+  "40 40 0 0 0 20"
+  "40 40 0 0 0 0"
 )
 
 iterations=5
