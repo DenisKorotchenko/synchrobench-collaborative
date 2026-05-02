@@ -141,7 +141,7 @@ distrs=(
   "0 50 25 0 25 0"
 )
 
-iterations=3
+iterations=5
 W=5
 d=10000
 
