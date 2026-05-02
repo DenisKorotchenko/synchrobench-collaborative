@@ -143,7 +143,7 @@ distrs=(
 
 iterations=3
 W=5
-d=60
+d=10000
 
 thread="1 2 4 8 16 32 63"
 count=0
