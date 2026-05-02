@@ -137,7 +137,8 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
                 }
             } else if (coin < cdf[5]) { // range sum
                 try {
-                    bench.rangeSum(newInt, newInt + 2048);
+                    int newInt2 = rand.nextInt(0, Parameters.range);
+                    bench.rangeSum(Math.min(newInt, newInt2), Math.max(newInt2, newInt));
                     numRangeSum++;
                 } catch (Exception e) {
                     this.failures++;
@@ -145,7 +146,8 @@ public class TestICollaborativeMapThreadLoop implements Runnable {
             } else { // range cap
                 try {
                     int value = rand.nextInt(-Parameters.range, Parameters.range);
-                    bench.rangeCap(newInt, newInt + 2048, value);
+                    int newInt2 = rand.nextInt(0, Parameters.range);
+                    bench.rangeCap(Math.min(newInt, newInt2), Math.max(newInt2, newInt), value);
                     numRangeCap++;
                 } catch (Exception e) {
                     this.failures++;

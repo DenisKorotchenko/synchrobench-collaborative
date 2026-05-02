@@ -163,7 +163,12 @@ distrs=(
   "40 40 0 0 0 0"
 )
 
-iterations=5
+distrs=(
+  "40 40 0 0 0 10"
+  "20 20 10 0 10 20"
+)
+
+iterations=1
 W=5
 d=10000
 
