@@ -15,7 +15,7 @@ public class TestStructure implements ITestStructure {
                     {1, 0, 1},
                     {1, 1, 0}
     },
-            true);
+            false);
 
     public TestStructure(Integer size) {
         this.size = size;
