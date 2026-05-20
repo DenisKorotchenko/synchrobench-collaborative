@@ -21,6 +21,8 @@ import contention.abstractions.MaintenanceAlg;
 import ru.dksu.semantic.ExtendedMap;
 import ru.dksu.semantic.ICollaborativeMap;
 import ru.dksu.semantic.ITestStructure;
+import ru.dksu.semantic.SemanticLock;
+import ru.dksu.semantic.SemanticLockFair;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of 
@@ -97,13 +99,59 @@ public class Test {
         AtomicLong j = new AtomicLong(size);
         for (int i = 0; i < 64; i++) {
             var t = new Thread(() -> {
-                Random rand = new Random();
-                while (true) {
-                    Integer v = rand.nextInt(range);
-                    if (testCollaborativeMapBench.put((Integer) v, (Integer) v) == null) {
-                        if (j.decrementAndGet() <= 0) {
+                boolean flg = true;
+                while (flg) {
+                    Integer v = s_random.get().nextInt(range);
+                    switch(benchType) {
+                        case INTSET:
+                            if (setBench.addInt(v)) {
+                                if (j.decrementAndGet() <= 0) {
+                                    flg = false;
+                                    break;
+                                }
+                            }
                             break;
-                        }
+                        case MAP:
+                            if (mapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
+                                if (j.decrementAndGet() <= 0) {
+                                    flg = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        case SORTEDSET:
+                            if (sortedBench.add((Integer) v)) {
+                                if (j.decrementAndGet() <= 0) {
+                                    flg = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        case TEST:
+//				testBench.updateRange((Integer) v, s_random.get().nextInt(range * 2));
+                            j.set(0);
+                            flg = false;
+//                           i=0;
+                            break;
+                        case TESTMAP:
+                            if (testMapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
+                                if (j.decrementAndGet() <= 0) {
+                                    flg = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        case TEST_COLLABORATIVE_MAP:
+                            if (testCollaborativeMapBench.put((Integer) v, (Integer) v) == null) {
+                                if (j.decrementAndGet() <= 0) {
+                                    flg = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        default:
+                            System.err.println("Wrong benchmark type");
+                            System.exit(0);
                     }
                 }
             });
@@ -311,6 +359,8 @@ public class Test {
 		fill(Parameters.range, Parameters.size);
         System.out.println(LocalDateTime.now().toString() + " filled");
 		Thread.sleep(1000);
+		SemanticLock.resetStatistics();
+		SemanticLockFair.resetStatistics();
 		startTime = System.currentTimeMillis();
 		for (Thread thread : threads)
 			thread.start();
@@ -445,6 +495,8 @@ public class Test {
 				e.printStackTrace();
 			}
 			test.execute(Parameters.numMilliseconds, false);
+			SemanticLock.LockStatistics semanticLockStatistics = SemanticLock.getAndResetStatistics();
+			SemanticLockFair.LockStatistics semanticLockFairStatistics = SemanticLockFair.getAndResetStatistics();
 
 			if (test.setBench instanceof MaintenanceAlg) {
 				((MaintenanceAlg) test.setBench).stopMaintenance();
@@ -478,6 +530,9 @@ public class Test {
                     test.printTestCollaborativeMapStats();
                     break;
 			}
+
+			test.printSemanticLockStats(semanticLockStatistics);
+			test.printSemanticLockFairStats(semanticLockFairStatistics);
 
 			if (Parameters.detailedStats)
 				test.printDetailedStats();
@@ -1050,6 +1105,26 @@ public class Test {
                 + " %)");
     }
 
+    private void printSemanticLockStats(SemanticLock.LockStatistics statistics) {
+        if (!statistics.hasData()) {
+            return;
+        }
+        printLine('-');
+        System.out.println("SemanticLock statistics");
+        printLine('-');
+        System.out.print(statistics);
+    }
+
+    private void printSemanticLockFairStats(SemanticLockFair.LockStatistics statistics) {
+        if (!statistics.hasData()) {
+            return;
+        }
+        printLine('-');
+        System.out.println("SemanticLockFair statistics");
+        printLine('-');
+        System.out.print(statistics);
+    }
+
 
     /**
 	 * Detailed Warmup TM Statistics
@@ -1181,6 +1256,8 @@ public class Test {
 		txDurationSum = 0;
 		elasticReads = 0;
 		readsInROPrefix = 0;
+		SemanticLock.resetStatistics();
+		SemanticLockFair.resetStatistics();
 	}
 
 	public void recordPreliminaryStats() {

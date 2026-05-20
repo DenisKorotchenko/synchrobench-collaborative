@@ -3,24 +3,25 @@ package ru.dksu.semantic;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-public class TestStructure implements ITestStructure {
+
+// Lock-based semantic lock, fair
+public class TestStructureLF implements ITestStructure {
     AtomicInteger[] elements;
 
     private final int size;
     private final int MULTIPLICATOR = 10;
 
-    SemanticLockFair semanticLock = new SemanticLockFair(3,
+    SemanticLock semanticLock = new SemanticLock(3,
             // updateRange, addRange, getRangeSum
             new int[][] {
                     {1, 1, 1},
                     {1, 0, 1},
                     {1, 1, 0}
     },
-            false);
+            true);
 
-    public TestStructure(Integer size) {
+    public TestStructureLF(Integer size) {
         this.size = size;
         elements = new AtomicInteger[size];
 

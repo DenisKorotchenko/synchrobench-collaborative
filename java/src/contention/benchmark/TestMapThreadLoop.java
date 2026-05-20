@@ -1,6 +1,7 @@
 package contention.benchmark;
 
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
 import java.util.Random;
 
 import ru.dksu.semantic.ExtendedMap;
@@ -62,11 +63,12 @@ public class TestMapThreadLoop implements Runnable {
 		cdf[3] = 1000;
 
 		if (myThreadNum == 0) {
-			System.out.println("Distribution: ");
-			for (int _cdf : cdf) {
-				System.out.print(_cdf);
-				System.out.println(" ");
-			}
+            System.out.print(LocalDateTime.now() + " Distribution: ");
+            for (int _cdf : cdf) {
+                System.out.print(_cdf);
+                System.out.print(" ");
+            }
+            System.out.println();
 		}
 //		assert (Parameters.numWrites >= Parameters.numWriteAlls);
 //		cdf[0] = 10 * Parameters.numWriteAlls;
