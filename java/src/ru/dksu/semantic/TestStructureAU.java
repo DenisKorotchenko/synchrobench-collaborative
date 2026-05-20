@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
-// Atomic-based semantic lock, unfair
+// Lock-based semantic lock, unfair
 public class TestStructureAU implements ITestStructure {
     AtomicInteger[] elements;
 

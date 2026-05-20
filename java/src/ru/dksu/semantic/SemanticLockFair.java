@@ -3,6 +3,7 @@ package ru.dksu.semantic;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SemanticLockFair {
@@ -66,6 +67,8 @@ public class SemanticLockFair {
         return false;
     }
 
+    final Condition stateChanged = globalLock.newCondition();
+
     public boolean tryLock(OperationRequest operationRequest) {
         checkOperationRequest(operationRequest);
         long startedAt = System.nanoTime();
@@ -112,8 +115,17 @@ public class SemanticLockFair {
         if (fairness) {
             fairnessQueue.add(operationRequest);
         }
-        while (!tryLock(operationRequest)) {
-            Thread.yield();
+        globalLock.lock();
+        try {
+            while (!tryLock(operationRequest)) {
+                try {
+                    stateChanged.await();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } finally {
+            globalLock.unlock();
         }
     }
     
@@ -127,6 +139,7 @@ public class SemanticLockFair {
                 throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
             }
         } finally {
+            stateChanged.signalAll();
             globalLock.unlock();
         }
     }
