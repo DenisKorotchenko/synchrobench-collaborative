@@ -8,14 +8,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import ru.dksu.semantic.SemanticLock;
-import ru.dksu.semantic.SemanticLockFair;
+import ru.dksu.semantic.SemanticLockGlobalLock;
 
 public class CollaborativeHelperFair {
     public AtomicLong counter = new AtomicLong();
     private Random random = new Random();
 
-    public SemanticLockFair semanticLock = new SemanticLockFair(
+    public SemanticLockGlobalLock semanticLock = new SemanticLockGlobalLock(
             4, // R, U, bR, bU
             new int[][]{
                 {0, 0, 0, 1},
@@ -36,7 +35,7 @@ public class CollaborativeHelperFair {
     ) {
         int operationType = isRead ? 2 : 3;
         while (true) {
-            SemanticLockFair.OperationRequest operationRequest = new SemanticLockFair.OperationRequest(
+            SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
                     Thread.currentThread().threadId(), operationType
             );
             if (semanticLock.fairness) {
@@ -121,7 +120,7 @@ public class CollaborativeHelperFair {
     ) {
         int operationType = isRead ? 0 : 1;
         while (true) {
-            SemanticLockFair.OperationRequest operationRequest = new SemanticLockFair.OperationRequest(
+            SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
                     Thread.currentThread().threadId(), operationType
             );
             if (semanticLock.fairness) {
@@ -146,7 +145,7 @@ public class CollaborativeHelperFair {
     ) {
         int operationType = isRead ? 0 : 1;
         while (true) {
-            SemanticLockFair.OperationRequest operationRequest = new SemanticLockFair.OperationRequest(
+            SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
                     Thread.currentThread().threadId(), operationType
             );
             if (semanticLock.fairness) {

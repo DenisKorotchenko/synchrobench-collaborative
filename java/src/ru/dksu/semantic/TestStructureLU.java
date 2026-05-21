@@ -12,7 +12,7 @@ public class TestStructureLU implements ITestStructure {
     private final int size;
     private final int MULTIPLICATOR = 10;
 
-    SemanticLock semanticLock = new SemanticLock(3,
+    SemanticLockAtomicCounters semanticLock = new SemanticLockAtomicCounters(3,
             // updateRange, addRange, getRangeSum
             new int[][] {
                     {1, 1, 1},

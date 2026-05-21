@@ -7,7 +7,6 @@ package hashtables.lockfree;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
@@ -30,7 +29,7 @@ import contention.abstractions.CompositionalMap;
 import hashtables.lockfree.cliffutils.AbstractEntry;
 import hashtables.lockfree.cliffutils.Counter;
 import hashtables.lockfree.cliffutils.UtilUnsafe;
-import ru.dksu.semantic.SemanticLockFair;
+import ru.dksu.semantic.SemanticLockGlobalLock;
 import sun.misc.Unsafe;
 
 /**
@@ -102,7 +101,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
 		AbstractMap<TypeK, TypeV> implements ConcurrentMap<TypeK, TypeV>,
 		CompositionalMap<TypeK, TypeV>, Cloneable, Serializable {
 
-    private SemanticLockFair semanticLock = new SemanticLockFair(
+    private SemanticLockGlobalLock semanticLock = new SemanticLockGlobalLock(
             4, // R, U, bR, bU
             new int[][]{
                     {0, 0, 0, 1},

@@ -1,17 +1,15 @@
 package ru.dksu.semantic;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class SemanticLockFair {
+public class SemanticLockAtomicCounters {
     int operationsNumber;
     int[][] conflicts;
 
-    int[] lockCounts;
-    ReentrantLock globalLock = new ReentrantLock();
+    AtomicInteger[] lockCounts;
 
     private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
     private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
@@ -20,7 +18,7 @@ public class SemanticLockFair {
         return statistics;
     });
 
-    public SemanticLockFair(
+    public SemanticLockAtomicCounters(
             int operationsNumber,
             int[][] conflicts
     ) {
@@ -31,7 +29,7 @@ public class SemanticLockFair {
 
     public final boolean fairness;
 
-    public SemanticLockFair(
+    public SemanticLockAtomicCounters(
             int operationsNumber,
             int[][] conflicts,
             boolean fair
@@ -50,105 +48,75 @@ public class SemanticLockFair {
         }
         this.operationsNumber = operationsNumber;
         this.conflicts = conflicts;
-        this.lockCounts = new int[operationsNumber];
-    }
-
-    private boolean fairnessCheck(OperationRequest operation) {
-        var iterator = fairnessQueue.iterator();
-        while (iterator.hasNext()) {
-            OperationRequest next = iterator.next();
-            if (next.threadId == Thread.currentThread().threadId()) {
-                return true;
-            }
-            if (conflicts[next.operationNumber][operation.operationNumber] > 0) {
-                return false;
-            }
+        this.lockCounts = new AtomicInteger[operationsNumber];
+        for (int i = 0; i < operationsNumber; i++) {
+            this.lockCounts[i] = new AtomicInteger();
         }
-        return false;
     }
 
-    final Condition stateChanged = globalLock.newCondition();
-
-    public boolean tryLock(OperationRequest operationRequest) {
-        checkOperationRequest(operationRequest);
+    public boolean tryLock(int operationNumber) {
+        checkOperationNumber(operationNumber);
         long startedAt = System.nanoTime();
         boolean locked = false;
+        boolean incremented = false;
         try {
-            if (fairness && !fairnessCheck(operationRequest)) {
+            if (fairness) {
+                Long firstThreadId = threadsQueue.peek();
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
+                    return false;
+                }
+            }
+
+            int value = this.lockCounts[operationNumber].incrementAndGet();
+            incremented = true;
+
+            if (this.conflicts[operationNumber][operationNumber] > 0 && value > 1) {
                 return false;
             }
-            globalLock.lock();
-            try {
-                for (int i = 0; i < operationsNumber; i++) {
-                    if (this.conflicts[operationRequest.operationNumber][i] > 0 && this.lockCounts[i] > 0) {
-                        return false;
-                    }
+            for (int i = 0; i < operationsNumber; i++) {
+                if (i == operationNumber) {
+                    continue;
                 }
-                if (fairness) {
-                    if (!fairnessQueue.remove(operationRequest)) {
-                        System.err.println("Thread is wrong!");
-                        throw new RuntimeException("Thread is wrong");
-                    }
+                if (this.conflicts[operationNumber][i] > 0 && this.lockCounts[i].get() > 0) {
+                    return false;
                 }
-
-                this.lockCounts[operationRequest.operationNumber]++;
-                locked = true;
-                return true;
-            } finally {
-                globalLock.unlock();
             }
+            if (fairness) {
+                Long firstThreadId = threadsQueue.poll();
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
+                    System.err.println("Thread is wrong!");
+                    throw new RuntimeException("Thread is wrong");
+                }
+            }
+            locked = true;
+            return true;
         } finally {
-            THREAD_STATISTICS.get().record(operationRequest.operationNumber, locked, System.nanoTime() - startedAt);
+            if (!locked && incremented) {
+                this.lockCounts[operationNumber].decrementAndGet();
+            }
+            THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
         }
     }
 
-    public record OperationRequest(
-        Long threadId,
-        Integer operationNumber
-    ) {}
-
-    public final ConcurrentLinkedDeque<OperationRequest> fairnessQueue = new ConcurrentLinkedDeque<>();
+    public final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
 
     public void lock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        OperationRequest operationRequest = new OperationRequest(Thread.currentThread().threadId(), operationNumber);
         if (fairness) {
-            fairnessQueue.add(operationRequest);
+            threadsQueue.add(Thread.currentThread().getId());
         }
-        globalLock.lock();
-        try {
-            while (!tryLock(operationRequest)) {
-                try {
-                    stateChanged.await();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        } finally {
-            globalLock.unlock();
+        while (!tryLock(operationNumber)) {
+            Thread.yield();
         }
     }
     
     public void unlock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        globalLock.lock();
-        try {
-            this.lockCounts[operationNumber]--;
-            if (this.lockCounts[operationNumber] < 0) {
-                this.lockCounts[operationNumber]++;
-                throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
-            }
-        } finally {
-            stateChanged.signalAll();
-            globalLock.unlock();
+        int value = this.lockCounts[operationNumber].decrementAndGet();
+        if (value < 0) {
+            this.lockCounts[operationNumber].incrementAndGet();
+            throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
         }
-    }
-
-    private void checkOperationRequest(OperationRequest operationRequest) {
-        if (operationRequest == null || operationRequest.threadId == null || operationRequest.operationNumber == null) {
-            throw new IllegalArgumentException("Invalid operation request");
-        }
-        checkOperationNumber(operationRequest.operationNumber);
     }
 
     private void checkOperationNumber(int operationNumber) {
@@ -309,7 +277,7 @@ public class SemanticLockFair {
         @Override
         public String toString() {
             StringBuilder result = new StringBuilder();
-            result.append("  SemanticLockFair requests:\t")
+            result.append("  SemanticLock requests:    \t")
                     .append(successfulRequests + failedRequests)
                     .append('\n');
             appendLine(result, "    |--successful", successfulRequests, successfulTimeNanos);

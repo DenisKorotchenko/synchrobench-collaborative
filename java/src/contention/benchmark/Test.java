@@ -21,8 +21,8 @@ import contention.abstractions.MaintenanceAlg;
 import ru.dksu.semantic.ExtendedMap;
 import ru.dksu.semantic.ICollaborativeMap;
 import ru.dksu.semantic.ITestStructure;
-import ru.dksu.semantic.SemanticLock;
-import ru.dksu.semantic.SemanticLockFair;
+import ru.dksu.semantic.SemanticLockAtomicCounters;
+import ru.dksu.semantic.SemanticLockGlobalLock;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of 
@@ -359,8 +359,8 @@ public class Test {
 		fill(Parameters.range, Parameters.size);
         System.out.println(LocalDateTime.now().toString() + " filled");
 		Thread.sleep(1000);
-		SemanticLock.resetStatistics();
-		SemanticLockFair.resetStatistics();
+		SemanticLockAtomicCounters.resetStatistics();
+		SemanticLockGlobalLock.resetStatistics();
 		startTime = System.currentTimeMillis();
 		for (Thread thread : threads)
 			thread.start();
@@ -495,8 +495,8 @@ public class Test {
 				e.printStackTrace();
 			}
 			test.execute(Parameters.numMilliseconds, false);
-			SemanticLock.LockStatistics semanticLockStatistics = SemanticLock.getAndResetStatistics();
-			SemanticLockFair.LockStatistics semanticLockFairStatistics = SemanticLockFair.getAndResetStatistics();
+			SemanticLockAtomicCounters.LockStatistics semanticLockStatistics = SemanticLockAtomicCounters.getAndResetStatistics();
+			SemanticLockGlobalLock.LockStatistics semanticLockFairStatistics = SemanticLockGlobalLock.getAndResetStatistics();
 
 			if (test.setBench instanceof MaintenanceAlg) {
 				((MaintenanceAlg) test.setBench).stopMaintenance();
@@ -1105,7 +1105,7 @@ public class Test {
                 + " %)");
     }
 
-    private void printSemanticLockStats(SemanticLock.LockStatistics statistics) {
+    private void printSemanticLockStats(SemanticLockAtomicCounters.LockStatistics statistics) {
         if (!statistics.hasData()) {
             return;
         }
@@ -1115,7 +1115,7 @@ public class Test {
         System.out.print(statistics);
     }
 
-    private void printSemanticLockFairStats(SemanticLockFair.LockStatistics statistics) {
+    private void printSemanticLockFairStats(SemanticLockGlobalLock.LockStatistics statistics) {
         if (!statistics.hasData()) {
             return;
         }
@@ -1256,8 +1256,8 @@ public class Test {
 		txDurationSum = 0;
 		elasticReads = 0;
 		readsInROPrefix = 0;
-		SemanticLock.resetStatistics();
-		SemanticLockFair.resetStatistics();
+		SemanticLockAtomicCounters.resetStatistics();
+		SemanticLockGlobalLock.resetStatistics();
 	}
 
 	public void recordPreliminaryStats() {

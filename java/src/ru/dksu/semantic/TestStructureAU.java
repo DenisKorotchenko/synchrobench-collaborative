@@ -12,7 +12,7 @@ public class TestStructureAU implements ITestStructure {
     private final int size;
     private final int MULTIPLICATOR = 10;
 
-    SemanticLockFair semanticLock = new SemanticLockFair(3,
+    SemanticLockGlobalLock semanticLock = new SemanticLockGlobalLock(3,
             // updateRange, addRange, getRangeSum
             new int[][] {
                     {1, 1, 1},

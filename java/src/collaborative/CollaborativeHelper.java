@@ -8,13 +8,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import ru.dksu.semantic.SemanticLock;
+import ru.dksu.semantic.SemanticLockAtomicCounters;
 
 public class CollaborativeHelper {
     private AtomicLong counter = new AtomicLong();
     private Random random = new Random();
 
-    private SemanticLock semanticLock = new SemanticLock(
+    private SemanticLockAtomicCounters semanticLock = new SemanticLockAtomicCounters(
             4, // R, U, bR, bU
             new int[][]{
                 {0, 0, 0, 1},

@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ExtendedMapSL3 implements ExtendedMap {
     private ConcurrentHashMap<Integer, Integer> _map = new ConcurrentHashMap<>();
-    private SemanticLock semanticLock = new SemanticLock(
+    private SemanticLockAtomicCounters semanticLock = new SemanticLockAtomicCounters(
             4,
             new int[][] {
                     {0, 0, 0, 0},

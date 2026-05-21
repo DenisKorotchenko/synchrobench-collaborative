@@ -40,7 +40,7 @@
 package trees.lockbased;
 
 import contention.abstractions.CompositionalMap;
-import ru.dksu.semantic.SemanticLockFair;
+import ru.dksu.semantic.SemanticLockGlobalLock;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -63,7 +63,7 @@ import java.util.function.Supplier;
  */
 public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V> {
-    private SemanticLockFair semanticLock = new SemanticLockFair(
+    private SemanticLockGlobalLock semanticLock = new SemanticLockGlobalLock(
             4, // R, U, bR, bU
             new int[][]{
                     {0, 0, 0, 1},

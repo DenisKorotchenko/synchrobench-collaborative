@@ -27,7 +27,7 @@ public class TestStructureShortLong implements ITestStructure {
         return (a + b - 1) / b;
     }
 
-    SemanticLock semanticLock = new SemanticLock(6,
+    SemanticLockAtomicCounters semanticLock = new SemanticLockAtomicCounters(6,
             new int[][] {
                     {0, 1, 0, 1, 0, 1},
                     {1, 1, 1, 1, 1, 1},
