@@ -311,7 +311,7 @@ public class SemanticLockGlobalLock {
         @Override
         public String toString() {
             StringBuilder result = new StringBuilder();
-            result.append("  SemanticLockFair requests:\t")
+            result.append("  SemanticLockGlobalLock requests:\t")
                     .append(successfulRequests + failedRequests)
                     .append('\n');
             appendLine(result, "    |--successful", successfulRequests, successfulTimeNanos);

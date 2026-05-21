@@ -277,7 +277,7 @@ public class SemanticLockAtomicCounters {
         @Override
         public String toString() {
             StringBuilder result = new StringBuilder();
-            result.append("  SemanticLock requests:    \t")
+            result.append("  SemanticLockAtomicCounters requests:    \t")
                     .append(successfulRequests + failedRequests)
                     .append('\n');
             appendLine(result, "    |--successful", successfulRequests, successfulTimeNanos);
