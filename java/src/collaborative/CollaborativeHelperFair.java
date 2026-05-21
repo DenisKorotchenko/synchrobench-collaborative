@@ -36,7 +36,7 @@ public class CollaborativeHelperFair {
         int operationType = isRead ? 2 : 3;
         while (true) {
             SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
-                    Thread.currentThread().threadId(), operationType
+                    Thread.currentThread().threadId(), new int[] { operationType }
             );
             if (semanticLock.fairness) {
                 semanticLock.fairnessQueue.add(operationRequest);
@@ -121,7 +121,7 @@ public class CollaborativeHelperFair {
         int operationType = isRead ? 0 : 1;
         while (true) {
             SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
-                    Thread.currentThread().threadId(), operationType
+                    Thread.currentThread().threadId(), new int[] { operationType }
             );
             if (semanticLock.fairness) {
                 semanticLock.fairnessQueue.add(operationRequest);
@@ -146,7 +146,7 @@ public class CollaborativeHelperFair {
         int operationType = isRead ? 0 : 1;
         while (true) {
             SemanticLockGlobalLock.OperationRequest operationRequest = new SemanticLockGlobalLock.OperationRequest(
-                    Thread.currentThread().threadId(), operationType
+                    Thread.currentThread().threadId(), new int[] { operationType }
             );
             if (semanticLock.fairness) {
                 semanticLock.fairnessQueue.add(operationRequest);

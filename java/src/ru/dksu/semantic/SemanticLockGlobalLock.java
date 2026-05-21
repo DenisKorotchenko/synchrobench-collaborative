@@ -57,10 +57,10 @@ public class SemanticLockGlobalLock {
         var iterator = fairnessQueue.iterator();
         while (iterator.hasNext()) {
             OperationRequest next = iterator.next();
-            if (next.threadId.longValue() == Thread.currentThread().threadId()) {
+            if (next.threadId == Thread.currentThread().threadId()) {
                 return true;
             }
-            if (conflicts[next.operationNumber][operation.operationNumber] > 0) {
+            if (conflicts[next.operationNumber[0]][operation.operationNumber[0]] > 0) {
                 return false;
             }
         }
@@ -80,7 +80,7 @@ public class SemanticLockGlobalLock {
             globalLock.lock();
             try {
                 for (int i = 0; i < operationsNumber; i++) {
-                    if (this.conflicts[operationRequest.operationNumber][i] > 0 && this.lockCounts[i] > 0) {
+                    if (this.conflicts[operationRequest.operationNumber[0]][i] > 0 && this.lockCounts[i] > 0) {
                         return false;
                     }
                 }
@@ -91,33 +91,36 @@ public class SemanticLockGlobalLock {
                     }
                 }
 
-                this.lockCounts[operationRequest.operationNumber]++;
+                this.lockCounts[operationRequest.operationNumber[0]]++;
                 locked = true;
                 return true;
             } finally {
                 globalLock.unlock();
             }
         } finally {
-            THREAD_STATISTICS.get().record(operationRequest.operationNumber, locked, System.nanoTime() - startedAt);
+            THREAD_STATISTICS.get().record(operationRequest.operationNumber[0], locked, System.nanoTime() - startedAt);
         }
     }
 
     public record OperationRequest(
-        Long threadId,
-        Integer operationNumber
+        long threadId,
+        int[] operationNumber
     ) {}
 
     public final ConcurrentLinkedDeque<OperationRequest> fairnessQueue = new ConcurrentLinkedDeque<>();
 
+    ThreadLocal<OperationRequest> operationRequest = ThreadLocal.withInitial(() -> { return new OperationRequest(Thread.currentThread().threadId(), new int[]{0}); });
+
     public void lock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        OperationRequest operationRequest = new OperationRequest(Thread.currentThread().threadId(), operationNumber);
+        OperationRequest tOperationRequest = operationRequest.get();
+        tOperationRequest.operationNumber[0] = operationNumber;
         if (fairness) {
-            fairnessQueue.add(operationRequest);
+            fairnessQueue.add(tOperationRequest);
         }
         globalLock.lock();
         try {
-            while (!tryLock(operationRequest)) {
+            while (!tryLock(tOperationRequest)) {
                 try {
                     stateChanged.await();
                 } catch (InterruptedException e) {
@@ -147,10 +150,10 @@ public class SemanticLockGlobalLock {
     }
 
     private void checkOperationRequest(OperationRequest operationRequest) {
-        if (operationRequest == null || operationRequest.threadId == null || operationRequest.operationNumber == null) {
+        if (operationRequest == null || operationRequest.operationNumber == null) {
             throw new IllegalArgumentException("Invalid operation request");
         }
-        checkOperationNumber(operationRequest.operationNumber);
+        checkOperationNumber(operationRequest.operationNumber[0]);
     }
 
     private void checkOperationNumber(int operationNumber) {
