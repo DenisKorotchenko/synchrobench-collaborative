@@ -87,7 +87,7 @@ public class TestThreadLoop implements Runnable {
 	public void run() {
 
 		while (!stop) {
-			Integer newInt = rand.nextInt(Parameters.range - 128);
+			int newInt = rand.nextInt(Parameters.range - 128);
 			int coin = rand.nextInt(1000);
 			if (coin < cdf[0]) { // 1. addRange
 				// int newInt2 = newInt + 128;

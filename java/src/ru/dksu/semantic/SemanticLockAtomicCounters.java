@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SemanticLockAtomicCounters {
     int operationsNumber;
     int[][] conflicts;
+    boolean[] selfConflict;
 
     AtomicInteger[] lockCounts;
 
@@ -47,7 +48,35 @@ public class SemanticLockAtomicCounters {
             }
         }
         this.operationsNumber = operationsNumber;
-        this.conflicts = conflicts;
+        this.conflicts = new int[operationsNumber][];
+        this.selfConflict = new boolean[operationsNumber];
+
+        for (int i = 0; i < operationsNumber; i++) {
+            int conflictsCount = 0;
+            for (int j = 0; j < conflicts[i].length; j++) {
+                if (i == j)
+                    continue;
+                if (conflicts[i][j] == 1) {
+                    conflictsCount++;
+                }
+            }
+            this.conflicts[i] = new int[conflictsCount];
+            int ind = 0;
+            for (int j = 0; j < conflictsCount; j++) {
+                if (i == j) {
+                    continue;
+                }
+                if (conflicts[i][j] == 1) {
+                    this.conflicts[i][ind] = j;
+                    ind++;
+                }
+            }
+            if (conflicts[i][i] == 1) {
+                this.selfConflict[i] = true;
+            } else {
+                this.selfConflict[i] = false;
+            }
+        }
         this.lockCounts = new AtomicInteger[operationsNumber];
         for (int i = 0; i < operationsNumber; i++) {
             this.lockCounts[i] = new AtomicInteger();
@@ -67,17 +96,18 @@ public class SemanticLockAtomicCounters {
                 }
             }
 
+            if (this.selfConflict[operationNumber] && this.lockCounts[operationNumber].get() > 0) {
+                return false;
+            }
+
             int value = this.lockCounts[operationNumber].incrementAndGet();
             incremented = true;
 
-            if (this.conflicts[operationNumber][operationNumber] > 0 && value > 1) {
+            if (this.selfConflict[operationNumber] && value > 1) {
                 return false;
             }
-            for (int i = 0; i < operationsNumber; i++) {
-                if (i == operationNumber) {
-                    continue;
-                }
-                if (this.conflicts[operationNumber][i] > 0 && this.lockCounts[i].get() > 0) {
+            for (int conflictInd: this.conflicts[operationNumber]) {
+                if (this.lockCounts[conflictInd].get() > 0) {
                     return false;
                 }
             }

@@ -9,6 +9,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SemanticLockGlobalLock {
     int operationsNumber;
     int[][] conflicts;
+    int[][] conflictsMatrix;
+    boolean[] selfConflict;
 
     int[] lockCounts;
     ReentrantLock globalLock = new ReentrantLock();
@@ -49,7 +51,37 @@ public class SemanticLockGlobalLock {
             }
         }
         this.operationsNumber = operationsNumber;
-        this.conflicts = conflicts;
+        this.conflicts = new int[operationsNumber][];
+        this.selfConflict = new boolean[operationsNumber];
+
+        for (int i = 0; i < operationsNumber; i++) {
+            int conflictsCount = 0;
+            for (int j = 0; j < conflicts[i].length; j++) {
+                if (i == j)
+                    continue;
+                if (conflicts[i][j] == 1) {
+                    conflictsCount++;
+                }
+            }
+            this.conflicts[i] = new int[conflictsCount];
+            int ind = 0;
+            for (int j = 0; j < conflictsCount; j++) {
+                if (i == j) {
+                    continue;
+                }
+                if (conflicts[i][j] == 1) {
+                    this.conflicts[i][ind] = j;
+                    ind++;
+                }
+            }
+            if (conflicts[i][i] == 1) {
+                this.selfConflict[i] = true;
+            } else {
+                this.selfConflict[i] = false;
+            }
+        }
+        this.conflictsMatrix = conflicts;
+
         this.lockCounts = new int[operationsNumber];
     }
 
@@ -60,7 +92,7 @@ public class SemanticLockGlobalLock {
             if (next.threadId == Thread.currentThread().threadId()) {
                 return true;
             }
-            if (conflicts[next.operationNumber[0]][operation.operationNumber[0]] > 0) {
+            if (this.conflictsMatrix[next.operationNumber[0]][operation.operationNumber[0]] > 0) {
                 return false;
             }
         }
@@ -79,8 +111,8 @@ public class SemanticLockGlobalLock {
             }
             globalLock.lock();
             try {
-                for (int i = 0; i < operationsNumber; i++) {
-                    if (this.conflicts[operationRequest.operationNumber[0]][i] > 0 && this.lockCounts[i] > 0) {
+                for (int conflictInd: this.conflicts[operationRequest.operationNumber[0]]) {
+                    if (this.lockCounts[conflictInd] > 0) {
                         return false;
                     }
                 }
