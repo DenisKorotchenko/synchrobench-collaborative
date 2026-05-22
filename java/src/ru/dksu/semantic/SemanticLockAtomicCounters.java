@@ -95,8 +95,9 @@ public class SemanticLockAtomicCounters {
                     return false;
                 }
             }
+            boolean tSelfConflict = this.selfConflict[operationNumber];
 
-            if (this.selfConflict[operationNumber] && this.lockCounts[operationNumber].get() > 0) {
+            if (tSelfConflict && this.lockCounts[operationNumber].get() > 0) {
                 return false;
             }
             for (int conflictInd: this.conflicts[operationNumber]) {
@@ -105,12 +106,17 @@ public class SemanticLockAtomicCounters {
                 }
             }
 
-            int value = this.lockCounts[operationNumber].incrementAndGet();
-            incremented = true;
-
-            if (this.selfConflict[operationNumber] && value > 1) {
-                return false;
+            if (tSelfConflict) {
+                if (!this.lockCounts[operationNumber].compareAndSet(0, 1)) {
+                    return false;
+                } else {
+                    incremented = true;
+                }
+            } else {
+                this.lockCounts[operationNumber].incrementAndGet();
+                incremented = true;
             }
+
             for (int conflictInd: this.conflicts[operationNumber]) {
                 if (this.lockCounts[conflictInd].get() > 0) {
                     return false;
@@ -129,7 +135,9 @@ public class SemanticLockAtomicCounters {
             if (!locked && incremented) {
                 this.lockCounts[operationNumber].decrementAndGet();
             }
-            THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
+            if (incremented) {
+                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
+            }
         }
     }
 
