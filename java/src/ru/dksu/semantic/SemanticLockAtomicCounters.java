@@ -99,6 +99,11 @@ public class SemanticLockAtomicCounters {
             if (this.selfConflict[operationNumber] && this.lockCounts[operationNumber].get() > 0) {
                 return false;
             }
+            for (int conflictInd: this.conflicts[operationNumber]) {
+                if (this.lockCounts[conflictInd].get() > 0) {
+                    return false;
+                }
+            }
 
             int value = this.lockCounts[operationNumber].incrementAndGet();
             incremented = true;

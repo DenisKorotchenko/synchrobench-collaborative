@@ -111,6 +111,9 @@ public class SemanticLockGlobalLock {
             }
             globalLock.lock();
             try {
+                if (this.selfConflict[operationRequest.operationNumber[0]] && this.lockCounts[operationRequest.operationNumber[0]] > 0) {
+                    return false;
+                }
                 for (int conflictInd: this.conflicts[operationRequest.operationNumber[0]]) {
                     if (this.lockCounts[conflictInd] > 0) {
                         return false;
