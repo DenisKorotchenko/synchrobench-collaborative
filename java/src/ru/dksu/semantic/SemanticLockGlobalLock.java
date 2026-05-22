@@ -56,7 +56,7 @@ public class SemanticLockGlobalLock {
 
         for (int i = 0; i < operationsNumber; i++) {
             int conflictsCount = 0;
-            for (int j = 0; j < conflicts[i].length; j++) {
+            for (int j = 0; j < operationsNumber; j++) {
                 if (i == j)
                     continue;
                 if (conflicts[i][j] == 1) {
@@ -65,7 +65,7 @@ public class SemanticLockGlobalLock {
             }
             this.conflicts[i] = new int[conflictsCount];
             int ind = 0;
-            for (int j = 0; j < conflictsCount; j++) {
+            for (int j = 0; j < operationsNumber; j++) {
                 if (i == j) {
                     continue;
                 }

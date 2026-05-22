@@ -53,7 +53,7 @@ public class SemanticLockAtomicCounters {
 
         for (int i = 0; i < operationsNumber; i++) {
             int conflictsCount = 0;
-            for (int j = 0; j < conflicts[i].length; j++) {
+            for (int j = 0; j < operationsNumber; j++) {
                 if (i == j)
                     continue;
                 if (conflicts[i][j] == 1) {
@@ -62,7 +62,7 @@ public class SemanticLockAtomicCounters {
             }
             this.conflicts[i] = new int[conflictsCount];
             int ind = 0;
-            for (int j = 0; j < conflictsCount; j++) {
+            for (int j = 0; j < operationsNumber; j++) {
                 if (i == j) {
                     continue;
                 }
@@ -79,7 +79,7 @@ public class SemanticLockAtomicCounters {
         }
         this.lockCounts = new AtomicInteger[operationsNumber];
         for (int i = 0; i < operationsNumber; i++) {
-            this.lockCounts[i] = new AtomicInteger();
+            this.lockCounts[i] = new AtomicInteger(0);
         }
     }
 
@@ -91,7 +91,7 @@ public class SemanticLockAtomicCounters {
         try {
             if (fairness) {
                 Long firstThreadId = threadsQueue.peek();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
                     return false;
                 }
             }
@@ -113,7 +113,7 @@ public class SemanticLockAtomicCounters {
             }
             if (fairness) {
                 Long firstThreadId = threadsQueue.poll();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
                     System.err.println("Thread is wrong!");
                     throw new RuntimeException("Thread is wrong");
                 }
