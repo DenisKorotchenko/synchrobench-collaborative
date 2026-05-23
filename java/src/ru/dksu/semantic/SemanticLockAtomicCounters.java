@@ -97,9 +97,6 @@ public class SemanticLockAtomicCounters {
             }
             boolean tSelfConflict = this.selfConflict[operationNumber];
 
-            if (tSelfConflict && this.lockCounts[operationNumber].get() > 0) {
-                return false;
-            }
             for (int conflictInd: this.conflicts[operationNumber]) {
                 if (this.lockCounts[conflictInd].get() > 0) {
                     return false;

@@ -23,9 +23,9 @@ size="67108864"
 #benchs="ru.dksu.semantic.TestStructure ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureShortLong ru.dksu.semantic.TestStructureShortLongRW"
 # for s in ${snapshots}; do
 #benchs="ru.dksu.semantic.TestStructureAF ru.dksu.semantic.TestStructureAU"
-benchs="ru.dksu.semantic.TestStructureLF ru.dksu.semantic.TestStructureLU"
+#benchs="ru.dksu.semantic.TestStructureLF ru.dksu.semantic.TestStructureLU"
 # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
-#benchs="ru.dksu.semantic.ExtendedMapSL3 ru.dksu.semantic.ExtendedMapSL"
+benchs="ru.dksu.semantic.ExtendedMapSL3_F ru.dksu.semantic.ExtendedMapSL3_U"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -82,11 +82,15 @@ distrs=(
 #  "50 50 0"
 #  "75 25 0"
 #  "100 0 0"
-  "33 33"
-  "90 5"
-  "80 10"
+#  "33 33"
+#  "90 5"
+#  "80 10"
 #  "100 0"
 #  "0 100"
+  "25 25 25"
+  "5 5 45"
+  "45 5 45"
+  "30 30 30"
 )
 
 iterations=5
