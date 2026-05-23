@@ -101,7 +101,7 @@ public class Test {
             var t = new Thread(() -> {
                 boolean flg = true;
                 while (flg) {
-                    Integer v = s_random.get().nextInt(range);
+                    int v = s_random.get().nextInt(range);
                     switch(benchType) {
                         case INTSET:
                             if (setBench.addInt(v)) {
@@ -170,7 +170,7 @@ public class Test {
 
 	public void fill(final int range, final long size) {
 //        if (Parameters.benchClassName.startsWith("hashtables.lockfree")) {
-        if (benchType == Type.TEST_COLLABORATIVE_MAP || benchType == Type.TESTMAP) {
+        if (benchType == Type.TEST_COLLABORATIVE_MAP) {
             System.out.println("Parallel fill");
             fillPar(range, size);
             return;
@@ -199,7 +199,7 @@ public class Test {
 				i=0;
 				break;
             case TESTMAP:
-                if (testMapBench.putIfAbsent((Integer) v, (Integer) v) == null) {
+                if (hm.putIfAbsent((Integer) v, (Integer) v) == null) {
                     i--;
                 }
                 break;
@@ -213,6 +213,10 @@ public class Test {
 				System.exit(0);
 			}
 		}
+
+        if (benchType == Type.TESTMAP) {
+            testMapBench.putAll(hm);
+        }
 	}
 
 
