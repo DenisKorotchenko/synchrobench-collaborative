@@ -52,7 +52,7 @@ public class TestThreadLoop implements Runnable {
 		total = 0;
 	}
 
-	int[] cdf = new int[3];
+	int[] cdf = new int[5];
 
 	public TestThreadLoop(short myThreadNum,
 						  ITestStructure bench, Method[] methods) {
