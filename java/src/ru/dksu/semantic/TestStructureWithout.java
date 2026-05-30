@@ -56,6 +56,16 @@ public class TestStructureWithout implements ITestStructure {
         }
     }
 
+    @Override
+    public int get(int index) {
+        return elements[index].get();
+    }
+
+    @Override
+    public int set(int index, int value) {
+        return elements[index].getAndSet(value);
+    }
+
 //    @Override
 //    public int getElement(int index) {
 //        return elements[index].get();

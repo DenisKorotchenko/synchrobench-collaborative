@@ -890,6 +890,8 @@ public class Test {
 		int _numGetRange = 0;
 		int _numAddRange = 0;
 		int _numUpdateRange = 0;
+        int _numGet = 0;
+        int _numSet = 0;
 		int _failure = 0;
 
 		for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -898,6 +900,8 @@ public class Test {
 			_numGetRange += testThreadLoops[threadNum].numGetRange;
 			_numAddRange += testThreadLoops[threadNum].numAddRange;
 			_numUpdateRange += testThreadLoops[threadNum].numUpdateRange;
+            _numGet += testThreadLoops[threadNum].numGet;
+            _numSet += testThreadLoops[threadNum].numSet;
 		}
 		throughput[currentIteration] = ((double) _total / elapsedTime);
 		printLine('-');
@@ -925,6 +929,12 @@ public class Test {
 		System.out.println("    |--updateRange succ.:       \t" + _numUpdateRange + "\t( "
 				+ formatDouble(((double) _numUpdateRange / (double) _total) * 100)
 				+ " %)");
+        System.out.println("    |--get succ.:       \t" + _numGet + "\t( "
+                + formatDouble(((double) _numGet / (double) _total) * 100)
+                + " %)");
+        System.out.println("    |--set succ.:       \t" + _numSet + "\t( "
+                + formatDouble(((double) _numSet / (double) _total) * 100)
+                + " %)");
 //		System.out.println("    |--removeAll succ.:    \t" + numRemoveAll
 //				+ "\t( "
 //				+ formatDouble(((double) numRemoveAll / (double) total) * 100)

@@ -6,22 +6,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 // Lock-based semantic lock, fair
-public class TestStructureLF implements ITestStructure {
+public class TestStructureU implements ITestStructure {
     AtomicInteger[] elements;
 
     private final int size;
     private final int MULTIPLICATOR = 10;
 
     SemanticLockAtomicCounters semanticLock = new SemanticLockAtomicCounters(3,
-            // updateRange, addRange, getRangeSum
+            // updateRange, addRange, getRangeSum, get, set
             new int[][] {
-                    {1, 1, 1},
-                    {1, 0, 1},
-                    {1, 1, 0}
-    },
-            true);
+                    {1, 1, 1, 1, 1},
+                    {1, 0, 1, 1, 1},
+                    {1, 1, 0, 0, 1},
+                    {1, 1, 0, 0, 0},
+                    {1, 1, 1, 0, 0}
+            },
+            false);
 
-    public TestStructureLF(Integer size) {
+    public TestStructureU(Integer size) {
         this.size = size;
         elements = new AtomicInteger[size];
 
@@ -105,6 +107,27 @@ public class TestStructureLF implements ITestStructure {
             element.set(0);
         }
     }
+
+    @Override
+    public int get(int index) {
+        semanticLock.lock(3);
+        try {
+            return elements[index].get();
+        } finally {
+            semanticLock.unlock(3);
+        }
+    }
+
+    @Override
+    public int set(int index, int value) {
+        semanticLock.lock(4);
+        try {
+            return elements[index].getAndSet(value);
+        } finally {
+            semanticLock.unlock(4);
+        }
+    }
+
 
 //    @Override
 //    public int getElement(int index) {

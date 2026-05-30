@@ -75,6 +75,26 @@ public class TestStructureRW implements ITestStructure {
         }
     }
 
+    @Override
+    public int get(int index) {
+        rwLock.readLock().lock();
+        try {
+            return elements[index].get();
+        } finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public int set(int index, int value) {
+        rwLock.writeLock().lock();
+        try {
+            return elements[index].getAndSet(value);
+        } finally {
+            rwLock.writeLock().unlock();
+        }
+    }
+
 //    @Override
 //    public int getElement(int index) {
 //        return elements[index].get();

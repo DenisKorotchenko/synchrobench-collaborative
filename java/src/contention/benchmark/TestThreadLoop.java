@@ -31,6 +31,8 @@ public class TestThreadLoop implements Runnable {
 	public long numAddRange = 0;
 	public long numUpdateRange = 0;
 	public long numGetRange = 0;
+    public long numGet = 0;
+    public long numSet = 0;
 	/** The counter of the false-returning operations */
 	public long failures = 0;
 	/** The counter of the thread operations */
@@ -57,10 +59,12 @@ public class TestThreadLoop implements Runnable {
 		this.myThreadNum = myThreadNum;
 		this.bench = bench;
 		/* initialize the method boundaries */
-		assert Parameters.distribution.length == 2;
+		assert Parameters.distribution.length == 4;
 		cdf[0] = Parameters.distribution[0] * 10;
 		cdf[1] = (Parameters.distribution[0] + Parameters.distribution[1]) * 10;
-		cdf[2] = 1000;
+        cdf[2] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2]) * 10;
+        cdf[3] = (Parameters.distribution[0] + Parameters.distribution[1] + Parameters.distribution[2] + Parameters.distribution[3]) * 10;
+        cdf[4] = 1000;
 
 		if (myThreadNum == 0) {
             System.out.print(LocalDateTime.now() + " Distribution: ");
@@ -119,7 +123,7 @@ public class TestThreadLoop implements Runnable {
 				} catch (Exception e) {
 					this.failures++;
 				}
-			} else { // 3. getRange
+			} else if (coin < cdf[2]){ // 3. getRange
 				// int newInt2 = newInt + 128;
 				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
 				if (newInt > newInt2) {
@@ -134,10 +138,25 @@ public class TestThreadLoop implements Runnable {
 				} catch (Exception e) {
 					this.failures++;
 				}
-			}
+			} else if (coin < cdf[3]){ // 4. get
+                try {
+                    bench.get(newInt);
+                    numGet++;
+                } catch (Exception e) {
+                    this.failures++;
+                }
+            } else { // 5. set
+                int value = rand.nextInt(-Parameters.range, Parameters.range);
+                try {
+                    bench.set(newInt, value);
+                    numSet++;
+                } catch (Exception e) {
+                    this.failures++;
+                }
+            }
 			total++;
 
-			assert total == numAddRange + numGetRange + numUpdateRange + failures;
+			assert total == numAddRange + numGetRange + numUpdateRange + numGet + numSet + failures;
 		}
 		// System.out.println(numAdd + " " + numRemove + " " + failures);
 

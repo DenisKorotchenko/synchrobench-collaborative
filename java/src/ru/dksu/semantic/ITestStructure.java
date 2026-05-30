@@ -13,10 +13,8 @@ public interface ITestStructure {
 
     public int getRangeSum(int from, int to);
 
-    public default boolean set(int index, int value) {
-        addRange(index, index, value);
-        return true;
-    }
-
     public void clear();
+
+    public int get(int index);
+    public int set(int index, int value);
 }
