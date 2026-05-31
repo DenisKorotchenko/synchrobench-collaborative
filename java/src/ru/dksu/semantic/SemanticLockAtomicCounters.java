@@ -89,79 +89,81 @@ public class SemanticLockAtomicCounters {
     }
 
     public boolean tryLock(int operationNumber) {
-        checkOperationNumber(operationNumber);
-//        long startedAt = System.nanoTime();
-        boolean locked = false;
-        boolean incremented = false;
-        try {
-            if (fairness) {
-                Long firstThreadId = threadsQueue.peek();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
-                    return false;
-                }
-            }
-            boolean tSelfConflict = this.selfConflict[operationNumber];
-
-            for (int conflictInd: this.conflicts[operationNumber]) {
-                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-                    return false;
-                }
-            }
-
-            if (tSelfConflict) {
-                if (!this.lockCounts.compareAndSet(operationNumber * DELTA, 0, 1)) {
-                    return false;
-                } else {
-                    incremented = true;
-                }
-            } else {
-                this.lockCounts.incrementAndGet(operationNumber * DELTA);
-                incremented = true;
-            }
-
-            boolean flg = false;
-//            boolean tExtra = false;
-
-//            while (!flg) {
-//                flg = true;
-//                for (int conflictInd : this.conflicts[operationNumber]) {
-//                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-//                        if (!tExtra && !extra.compareAndSet(false, true)) {
-//                            return false;
-//                        } else {
-//                            tExtra = true;
-//                            flg = false;
-//                            break;
-//                        }
-//                    }
+        this.lockCounts.incrementAndGet(operationNumber * DELTA);
+        return true;
+//        checkOperationNumber(operationNumber);
+////        long startedAt = System.nanoTime();
+//        boolean locked = false;
+//        boolean incremented = false;
+//        try {
+//            if (fairness) {
+//                Long firstThreadId = threadsQueue.peek();
+//                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
+//                    return false;
 //                }
 //            }
-            for (int conflictInd: this.conflicts[operationNumber]) {
-                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-                    return false;
-                }
-            }
-
-            if (fairness) {
-                Long firstThreadId = threadsQueue.poll();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
-                    System.err.println("Thread is wrong!");
-                    throw new RuntimeException("Thread is wrong");
-                }
-            }
-            locked = true;
-//            if (tExtra) {
-//                extra.set(false);
+//            boolean tSelfConflict = this.selfConflict[operationNumber];
+//
+//            for (int conflictInd: this.conflicts[operationNumber]) {
+//                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+//                    return false;
+//                }
 //            }
-            return true;
-        } finally {
-            if (!locked && incremented) {
-                this.lockCounts.decrementAndGet(operationNumber * DELTA);
-            }
-//            if (incremented) {
-//                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
+//
+//            if (tSelfConflict) {
+//                if (!this.lockCounts.compareAndSet(operationNumber * DELTA, 0, 1)) {
+//                    return false;
+//                } else {
+//                    incremented = true;
+//                }
+//            } else {
+//                this.lockCounts.incrementAndGet(operationNumber * DELTA);
+//                incremented = true;
 //            }
-        }
+//
+//            boolean flg = false;
+////            boolean tExtra = false;
+//
+////            while (!flg) {
+////                flg = true;
+////                for (int conflictInd : this.conflicts[operationNumber]) {
+////                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+////                        if (!tExtra && !extra.compareAndSet(false, true)) {
+////                            return false;
+////                        } else {
+////                            tExtra = true;
+////                            flg = false;
+////                            break;
+////                        }
+////                    }
+////                }
+////            }
+//            for (int conflictInd: this.conflicts[operationNumber]) {
+//                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+//                    return false;
+//                }
+//            }
+//
+//            if (fairness) {
+//                Long firstThreadId = threadsQueue.poll();
+//                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
+//                    System.err.println("Thread is wrong!");
+//                    throw new RuntimeException("Thread is wrong");
+//                }
+//            }
+//            locked = true;
+////            if (tExtra) {
+////                extra.set(false);
+////            }
+//            return true;
+//        } finally {
+//            if (!locked && incremented) {
+//                this.lockCounts.decrementAndGet(operationNumber * DELTA);
+//            }
+////            if (incremented) {
+////                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
+////            }
+//        }
     }
 
     public final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
