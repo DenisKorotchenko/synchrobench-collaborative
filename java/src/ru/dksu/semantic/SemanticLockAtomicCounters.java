@@ -11,7 +11,7 @@ public class SemanticLockAtomicCounters {
     int operationsNumber;
     int[][] conflicts;
     boolean[] selfConflict;
-    private final int DELTA = 16;
+    private final int DELTA = 128;
 
     AtomicIntegerArray lockCounts;
 
@@ -90,7 +90,7 @@ public class SemanticLockAtomicCounters {
 
     public boolean tryLock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        long startedAt = System.nanoTime();
+//        long startedAt = System.nanoTime();
         boolean locked = false;
         boolean incremented = false;
         try {
