@@ -11,7 +11,7 @@ public class SemanticLockAtomicCounters {
     int operationsNumber;
     int[][] conflicts;
     boolean[] selfConflict;
-    private final int DELTA = 128;
+    private final int DELTA = 32;
 
     AtomicIntegerArray lockCounts;
 
@@ -31,7 +31,7 @@ public class SemanticLockAtomicCounters {
                 false);
     }
 
-    private final AtomicBoolean extra = new AtomicBoolean(false);
+//    private final AtomicBoolean extra = new AtomicBoolean(false);
 
     public final boolean fairness;
 
@@ -120,22 +120,28 @@ public class SemanticLockAtomicCounters {
             }
 
             boolean flg = false;
-            boolean tExtra = false;
+//            boolean tExtra = false;
 
-            while (!flg) {
-                flg = true;
-                for (int conflictInd : this.conflicts[operationNumber]) {
-                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-                        if (tExtra || !extra.compareAndSet(false, true)) {
-                            return false;
-                        } else {
-                            tExtra = true;
-                            flg = false;
-                            break;
-                        }
-                    }
+//            while (!flg) {
+//                flg = true;
+//                for (int conflictInd : this.conflicts[operationNumber]) {
+//                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+//                        if (!tExtra && !extra.compareAndSet(false, true)) {
+//                            return false;
+//                        } else {
+//                            tExtra = true;
+//                            flg = false;
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+            for (int conflictInd: this.conflicts[operationNumber]) {
+                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+                    return false;
                 }
             }
+
             if (fairness) {
                 Long firstThreadId = threadsQueue.poll();
                 if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
@@ -144,9 +150,9 @@ public class SemanticLockAtomicCounters {
                 }
             }
             locked = true;
-            if (tExtra) {
-                extra.set(false);
-            }
+//            if (tExtra) {
+//                extra.set(false);
+//            }
             return true;
         } finally {
             if (!locked && incremented) {
