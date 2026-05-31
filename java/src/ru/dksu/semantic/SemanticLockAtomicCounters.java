@@ -15,12 +15,12 @@ public class SemanticLockAtomicCounters {
 
     AtomicIntegerArray lockCounts;
 
-    private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
-    private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
-        ThreadStatistics statistics = new ThreadStatistics();
-        ALL_THREAD_STATISTICS.add(statistics);
-        return statistics;
-    });
+//    private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
+//    private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
+//        ThreadStatistics statistics = new ThreadStatistics();
+//        ALL_THREAD_STATISTICS.add(statistics);
+//        return statistics;
+//    });
 
     public SemanticLockAtomicCounters(
             int operationsNumber,
@@ -152,9 +152,9 @@ public class SemanticLockAtomicCounters {
             if (!locked && incremented) {
                 this.lockCounts.decrementAndGet(operationNumber * DELTA);
             }
-            if (incremented) {
-                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
-            }
+//            if (incremented) {
+//                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
+//            }
         }
     }
 
@@ -187,9 +187,9 @@ public class SemanticLockAtomicCounters {
 
     public static LockStatistics getStatistics() {
         LockStatistics result = new LockStatistics();
-        for (ThreadStatistics statistics : ALL_THREAD_STATISTICS) {
-            statistics.addTo(result);
-        }
+//        for (ThreadStatistics statistics : ALL_THREAD_STATISTICS) {
+//            statistics.addTo(result);
+//        }
         return result;
     }
 
@@ -200,9 +200,9 @@ public class SemanticLockAtomicCounters {
     }
 
     public static void resetStatistics() {
-        for (ThreadStatistics statistics : ALL_THREAD_STATISTICS) {
-            statistics.reset();
-        }
+//        for (ThreadStatistics statistics : ALL_THREAD_STATISTICS) {
+//            statistics.reset();
+//        }
     }
 
     private static final class ThreadStatistics {
