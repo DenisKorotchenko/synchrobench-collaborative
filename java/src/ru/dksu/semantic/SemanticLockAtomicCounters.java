@@ -3,6 +3,7 @@ package ru.dksu.semantic;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SemanticLockAtomicCounters {
@@ -27,6 +28,8 @@ public class SemanticLockAtomicCounters {
                 conflicts,
                 false);
     }
+
+    private final AtomicBoolean extra = new AtomicBoolean(false);
 
     public final boolean fairness;
 
@@ -114,9 +117,21 @@ public class SemanticLockAtomicCounters {
                 incremented = true;
             }
 
-            for (int conflictInd: this.conflicts[operationNumber]) {
-                if (this.lockCounts[conflictInd].get() > 0) {
-                    return false;
+            boolean flg = false;
+            boolean tExtra = false;
+
+            while (!flg) {
+                flg = true;
+                for (int conflictInd : this.conflicts[operationNumber]) {
+                    if (this.lockCounts[conflictInd].get() > 0) {
+                        if (tExtra || !extra.compareAndSet(false, true)) {
+                            return false;
+                        } else {
+                            tExtra = true;
+                            flg = false;
+                            break;
+                        }
+                    }
                 }
             }
             if (fairness) {
@@ -127,6 +142,9 @@ public class SemanticLockAtomicCounters {
                 }
             }
             locked = true;
+            if (tExtra) {
+                extra.set(false);
+            }
             return true;
         } finally {
             if (!locked && incremented) {
