@@ -20,7 +20,7 @@ public class ExtendedMapSL3_FG implements ExtendedMap {
 
     @Override
     public Integer sum() {
-        int r = semanticLock.lock(2);
+        semanticLock.lock(2);
         try {
             final Integer[] sum = {0};
             _map.keys().asIterator().forEachRemaining( el ->
@@ -28,13 +28,13 @@ public class ExtendedMapSL3_FG implements ExtendedMap {
             );
             return sum[0];
         } finally {
-            semanticLock.unlock(2, r);
+            semanticLock.unlock(2);
         }
     }
 
     @Override
     public Integer cap(Integer maxValue) {
-        int r = semanticLock.lock(3);
+        semanticLock.lock(3);
         try {
             final int[] x = {0};
             _map.replaceAll((key, value) -> {
@@ -46,127 +46,127 @@ public class ExtendedMapSL3_FG implements ExtendedMap {
             });
             return x[0];
         } finally {
-            semanticLock.unlock(3, r);
+            semanticLock.unlock(3);
         }
     }
 
     @Override
     public int size() {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.size();
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public boolean isEmpty() {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.isEmpty();
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public boolean containsKey(Object key) {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.containsKey(key);
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public boolean containsValue(Object value) {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.containsValue(value);
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public Integer get(Object key) {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.get(key);
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public Integer put(Integer key, Integer value) {
-        int r = semanticLock.lock(1);
+        semanticLock.lock(1);
         try {
             return _map.put(key, value);
         } finally {
-            semanticLock.unlock(1, r);
+            semanticLock.unlock(1);
         }
     }
 
     @Override
     public Integer remove(Object key) {
-        int r = semanticLock.lock(1);
+        semanticLock.lock(1);
         try {
             return _map.remove(key);
         } finally {
-            semanticLock.unlock(1, r);
+            semanticLock.unlock(1);
         }
     }
 
     @Override
     public void putAll(Map<? extends Integer, ? extends Integer> m) {
-        int r = semanticLock.lock(1);
+        semanticLock.lock(1);
         try {
             _map.putAll(m);
         } finally {
-            semanticLock.unlock(1, r);
+            semanticLock.unlock(1);
         }
     }
 
     @Override
     public void clear() {
-        int r = semanticLock.lock(1);
+        semanticLock.lock(1);
         try {
             _map.clear();
         } finally {
-            semanticLock.unlock(1, r);
+            semanticLock.unlock(1);
         }
     }
 
     @Override
     public Set<Integer> keySet() {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.keySet();
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public Collection<Integer> values() {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.values();
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 
     @Override
     public Set<Entry<Integer, Integer>> entrySet() {
-        int r = semanticLock.lock(0);
+        semanticLock.lock(0);
         try {
             return _map.entrySet();
         } finally {
-            semanticLock.unlock(0, r);
+            semanticLock.unlock(0);
         }
     }
 }
