@@ -3,6 +3,7 @@ package ru.dksu.semantic;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -12,8 +13,10 @@ public class SemanticLockAtomicCounters {
     int[][] conflicts;
     boolean[] selfConflict;
     private final int DELTA = 32;
+    private final int K = 8;
 
     AtomicIntegerArray lockCounts;
+    ThreadLocalRandom random;
 
 //    private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
 //    private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
@@ -82,14 +85,14 @@ public class SemanticLockAtomicCounters {
                 this.selfConflict[i] = false;
             }
         }
-        this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA);
+        this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA * K);
 //        for (int i = 0; i < operationsNumber; i++) {
 //            this.lockCounts[i] = new AtomicInteger(0);
 //        }
     }
 
     public boolean tryLock(int operationNumber) {
-        this.lockCounts.incrementAndGet(operationNumber * DELTA);
+        this.lockCounts.incrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
         return true;
 //        checkOperationNumber(operationNumber);
 ////        long startedAt = System.nanoTime();
@@ -180,7 +183,8 @@ public class SemanticLockAtomicCounters {
     
     public void unlock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
+//        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
+        int value = this.lockCounts.decrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
         if (value < 0) {
             this.lockCounts.incrementAndGet(operationNumber * DELTA);
             throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
