@@ -16,7 +16,6 @@ public class SemanticLockAtomicCounters {
     private final int K = 8;
 
     AtomicIntegerArray lockCounts;
-    ThreadLocalRandom random;
 
 //    private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
 //    private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
@@ -92,7 +91,7 @@ public class SemanticLockAtomicCounters {
     }
 
     public boolean tryLock(int operationNumber) {
-        this.lockCounts.incrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
+        this.lockCounts.incrementAndGet((operationNumber * K + ThreadLocalRandom.current().nextInt(K)) * DELTA);
         return true;
 //        checkOperationNumber(operationNumber);
 ////        long startedAt = System.nanoTime();
@@ -184,11 +183,19 @@ public class SemanticLockAtomicCounters {
     public void unlock(int operationNumber) {
         checkOperationNumber(operationNumber);
 //        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
-        int value = this.lockCounts.decrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
-        if (value < 0) {
-            this.lockCounts.incrementAndGet(operationNumber * DELTA);
-            throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
+        while (true) {
+            int t = (operationNumber * K + ThreadLocalRandom.current().nextInt(K)) * DELTA;
+            int val = this.lockCounts.get(t);
+            if (val > 0) {
+                this.lockCounts.compareAndSet(t, val, val-1);
+                return;
+            }
         }
+//        int value = this.lockCounts.decrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
+//        if (value < 0) {
+//            this.lockCounts.incrementAndGet(operationNumber * DELTA);
+//            throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
+//        }
     }
 
     private void checkOperationNumber(int operationNumber) {
