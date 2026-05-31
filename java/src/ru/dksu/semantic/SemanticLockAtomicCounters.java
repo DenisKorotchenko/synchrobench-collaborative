@@ -5,13 +5,15 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 public class SemanticLockAtomicCounters {
     int operationsNumber;
     int[][] conflicts;
     boolean[] selfConflict;
+    private final int DELTA = 16;
 
-    AtomicInteger[] lockCounts;
+    AtomicIntegerArray lockCounts;
 
     private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
     private static final ThreadLocal<ThreadStatistics> THREAD_STATISTICS = ThreadLocal.withInitial(() -> {
@@ -80,10 +82,10 @@ public class SemanticLockAtomicCounters {
                 this.selfConflict[i] = false;
             }
         }
-        this.lockCounts = new AtomicInteger[operationsNumber];
-        for (int i = 0; i < operationsNumber; i++) {
-            this.lockCounts[i] = new AtomicInteger(0);
-        }
+        this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA);
+//        for (int i = 0; i < operationsNumber; i++) {
+//            this.lockCounts[i] = new AtomicInteger(0);
+//        }
     }
 
     public boolean tryLock(int operationNumber) {
@@ -101,19 +103,19 @@ public class SemanticLockAtomicCounters {
             boolean tSelfConflict = this.selfConflict[operationNumber];
 
             for (int conflictInd: this.conflicts[operationNumber]) {
-                if (this.lockCounts[conflictInd].get() > 0) {
+                if (this.lockCounts.get(conflictInd * DELTA) > 0) {
                     return false;
                 }
             }
 
             if (tSelfConflict) {
-                if (!this.lockCounts[operationNumber].compareAndSet(0, 1)) {
+                if (!this.lockCounts.compareAndSet(operationNumber * DELTA, 0, 1)) {
                     return false;
                 } else {
                     incremented = true;
                 }
             } else {
-                this.lockCounts[operationNumber].incrementAndGet();
+                this.lockCounts.incrementAndGet(operationNumber * DELTA);
                 incremented = true;
             }
 
@@ -123,7 +125,7 @@ public class SemanticLockAtomicCounters {
             while (!flg) {
                 flg = true;
                 for (int conflictInd : this.conflicts[operationNumber]) {
-                    if (this.lockCounts[conflictInd].get() > 0) {
+                    if (this.lockCounts.get(operationNumber * DELTA) > 0) {
                         if (tExtra || !extra.compareAndSet(false, true)) {
                             return false;
                         } else {
@@ -148,7 +150,7 @@ public class SemanticLockAtomicCounters {
             return true;
         } finally {
             if (!locked && incremented) {
-                this.lockCounts[operationNumber].decrementAndGet();
+                this.lockCounts.decrementAndGet(operationNumber * DELTA);
             }
             if (incremented) {
                 THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
@@ -170,9 +172,9 @@ public class SemanticLockAtomicCounters {
     
     public void unlock(int operationNumber) {
         checkOperationNumber(operationNumber);
-        int value = this.lockCounts[operationNumber].decrementAndGet();
+        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
         if (value < 0) {
-            this.lockCounts[operationNumber].incrementAndGet();
+            this.lockCounts.incrementAndGet(operationNumber * DELTA);
             throw new IllegalStateException("Unlock without matching lock for operation " + operationNumber);
         }
     }
