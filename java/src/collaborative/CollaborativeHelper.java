@@ -38,7 +38,8 @@ public class CollaborativeHelper {
             if (semanticLock.fairness) {
                 semanticLock.threadsQueue.add(Thread.currentThread().getId());
             }
-            if (semanticLock.tryLock(operationType)) {
+            int t = semanticLock.tryLock(operationType);
+            if (t != -1) {
                 try {
                     long targetOperation = counter.incrementAndGet();
 
@@ -54,7 +55,7 @@ public class CollaborativeHelper {
                     this.tasksQueues.remove(targetOperation);
                     this.inProgress.remove(targetOperation);
                 } finally {
-                    semanticLock.unlock(operationType);
+                    semanticLock.unlock(operationType, t);
                 }
                 return reduce.get();
             } else {
@@ -120,11 +121,12 @@ public class CollaborativeHelper {
             if (semanticLock.fairness) {
                 semanticLock.threadsQueue.add(Thread.currentThread().getId());
             }
-            if (semanticLock.tryLock(operationType)) {
+            int t = semanticLock.tryLock(operationType);
+            if (t != -1) {
                 try {
                     return function.get();
                 } finally {
-                    semanticLock.unlock(operationType);
+                    semanticLock.unlock(operationType, t);
                 }
             } else {
                 this.helpIfNeeded();
@@ -142,12 +144,13 @@ public class CollaborativeHelper {
             if (semanticLock.fairness) {
                 semanticLock.threadsQueue.add(Thread.currentThread().getId());
             }
-            if (semanticLock.tryLock(operationType)) {
+            int t = semanticLock.tryLock(operationType);
+            if (t != -1) {
                 try {
                     function.run();
                     return;
                 } finally {
-                    semanticLock.unlock(operationType);
+                    semanticLock.unlock(operationType, t);
                 }
             } else {
                 this.helpIfNeeded();

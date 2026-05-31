@@ -75,7 +75,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	private <T> T withAllLock(Supplier<T> function, boolean isRead) {
         int operationType = isRead ? 0 : 1;
-        int r = semanticLock.lock(operationType);
+        semanticLock.lock(operationType);
         try {
             return function.get();
         } finally {
@@ -85,7 +85,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	private void withAllLock(Runnable function, boolean isRead) {
         int operationType = isRead ? 0 : 1;
-        int r = semanticLock.lock(operationType);
+        semanticLock.lock(operationType);
         try {
             function.run();
             return;
@@ -1850,7 +1850,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 
 
 	public ArrayList<Entry<K, V>> snapshot() {
-        int r = semanticLock.lock(2);
+        semanticLock.lock(2);
         try {
             ArrayList<Entry<K, V>> result = new ArrayList<>();
             Queue<Node<K, V>> q = new ArrayDeque<>();
@@ -1877,7 +1877,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
             }
             return result;
         } finally {
-            semanticLock.unlock(2, r);
+            semanticLock.unlock(2);
         }
 	}
 
@@ -1885,7 +1885,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
 			V start,
 			BiFunction<V, V, V> function
 	) {
-		int r = semanticLock.lock(2);
+		semanticLock.lock(2);
         try {
             V res = start;
             Deque<Node<K, V>> q = new ArrayDeque<>();
@@ -1909,12 +1909,12 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
             }
             return res;
         } finally {
-            semanticLock.unlock(2, r);
+            semanticLock.unlock(2);
         }
 	}
 
     public V cap(Integer maxValue) {
-        int r = semanticLock.lock(3);
+        semanticLock.lock(3);
         try {
             Integer res = 0;
             Deque<Node<K, V>> q = new ArrayDeque<>();
@@ -1941,7 +1941,7 @@ public class LockBasedStanfordTreeMap<K, V> extends AbstractMap<K, V> implements
             }
             return (V) res;
         } finally {
-            semanticLock.unlock(3, r);
+            semanticLock.unlock(3);
         }
     }
 
