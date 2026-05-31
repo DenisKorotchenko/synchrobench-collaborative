@@ -125,7 +125,7 @@ public class SemanticLockAtomicCounters {
             while (!flg) {
                 flg = true;
                 for (int conflictInd : this.conflicts[operationNumber]) {
-                    if (this.lockCounts.get(operationNumber * DELTA) > 0) {
+                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
                         if (tExtra || !extra.compareAndSet(false, true)) {
                             return false;
                         } else {
