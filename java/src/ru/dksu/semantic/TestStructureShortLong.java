@@ -68,7 +68,7 @@
 //    public void updateRange(int from, int to, int value) {
 //        if (isLongRange(from, to)) {
 //            // LONG
-//            semanticLock.lock(LONG_UPDATE);
+//            int r = semanticLock.lock(LONG_UPDATE);
 //            try {
 //                for (int i = from; i <= to; i++) {
 //                    elements[i].set(value);
@@ -78,7 +78,7 @@
 //            }
 //        } else {
 //            // SHORT
-//            semanticLock.lock(SHORT_UPDATE);
+//            int r = semanticLock.lock(SHORT_UPDATE);
 //            try {
 //                int firstBucket = from / this.shortBucketSize;
 //                int lastBucket = to / this.shortBucketSize;
@@ -106,7 +106,7 @@
 //    public void addRange(int from, int to, int add) {
 //        if (isLongRange(from, to)) {
 //            // LONG
-//            semanticLock.lock(LONG_ADD);
+//            int r = semanticLock.lock(LONG_ADD);
 //            try {
 //                for (int i = from; i <= to; i++) {
 //                    elements[i].addAndGet(add);
@@ -116,7 +116,7 @@
 //            }
 //        } else {
 //            // SHORT
-//            semanticLock.lock(SHORT_ADD);
+//            int r = semanticLock.lock(SHORT_ADD);
 //            try {
 //                int firstBucket = from / this.shortBucketSize;
 //                int lastBucket = to / this.shortBucketSize;
@@ -144,7 +144,7 @@
 //    public int getRangeSum(int from, int to) {
 //        if (isLongRange(from, to)) {
 //            // LONG
-//            semanticLock.lock(LONG_GET);
+//            int r = semanticLock.lock(LONG_GET);
 //            int sum = 0;
 //            try {
 //                for (int i = from; i <= to; i++) {
@@ -156,7 +156,7 @@
 //            }
 //        } else {
 //            // SHORT
-//            semanticLock.lock(SHORT_GET);
+//            int r = semanticLock.lock(SHORT_GET);
 //            try {
 //                int firstBucket = from / this.shortBucketSize;
 //                int lastBucket = to / this.shortBucketSize;

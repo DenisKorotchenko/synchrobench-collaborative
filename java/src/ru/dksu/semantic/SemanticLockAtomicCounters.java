@@ -104,7 +104,7 @@ public class SemanticLockAtomicCounters {
 //        }
     }
 
-    public boolean tryLock(int operationNumber) {
+    public int tryLock(int operationNumber) {
         checkOperationNumber(operationNumber);
 //        long startedAt = System.nanoTime();
         boolean locked = false;
@@ -117,19 +117,19 @@ public class SemanticLockAtomicCounters {
             if (fairness) {
                 Long firstThreadId = threadsQueue.peek();
                 if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
-                    return false;
+                    return -1;
                 }
             }
 
             for (int conflictInd: this.conflicts[operationNumber]) {
                 if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-                    return false;
+                    return -1;
                 }
             }
 
             if (tSelfConflict) {
                 if (!this.lockCounts.compareAndSet(rInd, 0, 1)) {
-                    return false;
+                    return -1;
                 } else {
                     incremented = true;
                 }
@@ -157,7 +157,7 @@ public class SemanticLockAtomicCounters {
 //            }
             for (int conflictInd: this.conflicts[operationNumber]) {
                 if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-                    return false;
+                    return -1;
                 }
             }
 
@@ -172,7 +172,7 @@ public class SemanticLockAtomicCounters {
 //            if (tExtra) {
 //                extra.set(false);
 //            }
-            return true;
+            return rInd;
         } finally {
             if (!locked && incremented) {
                 this.lockCounts.decrementAndGet(rInd);
@@ -185,21 +185,25 @@ public class SemanticLockAtomicCounters {
 
     public final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
 
-    public void lock(int operationNumber) {
+    public int lock(int operationNumber) {
         checkOperationNumber(operationNumber);
         if (fairness) {
             threadsQueue.add(Thread.currentThread().getId());
         }
-        while (!tryLock(operationNumber)) {
+        while (true) {
+            int val = tryLock(operationNumber);
+            if (val != -1) {
+                return val;
+            }
             Thread.yield();
         }
     }
     
-    public void unlock(int operationNumber) {
+    public void unlock(int operationNumber, int rInd) {
         checkOperationNumber(operationNumber);
 //        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
         while (true) {
-            int t = selfConflict[operationNumber] ? 0 : (operationNumber * K + ThreadLocalRandom.current().nextInt(K)) * DELTA;
+            int t = rInd;
             int val = this.lockCounts.get(t);
             if (val > 0) {
                 this.lockCounts.compareAndSet(t, val, val-1);

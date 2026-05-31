@@ -61,31 +61,31 @@
 //
 //    @Override
 //    public void updateRange(int from, int to, int value) {
-//        semanticLock.lock(0);
+//        int r = semanticLock.lock(0);
 //        try {
 //            for (int i = from; i <= to; i++) {
 //                elements[i].set(value);
 //            }
 //        } finally {
-//            semanticLock.unlock(0);
+//            semanticLock.unlock(0, r);
 //        }
 //    }
 //
 //    @Override
 //    public void addRange(int from, int to, int add) {
-//        semanticLock.lock(1);
+//        int r = semanticLock.lock(1);
 //        try {
 //            for (int i = from; i <= to; i++) {
 //                elements[i].addAndGet(add);
 //            }
 //        } finally {
-//            semanticLock.unlock(1);
+//            semanticLock.unlock(1, r);
 //        }
 //    }
 //
 //    @Override
 //    public int getRangeSum(int from, int to) {
-//        semanticLock.lock(2);
+//        int r = semanticLock.lock(2);
 //        int sum = 0;
 //        try {
 //            for (int i = from; i <= to; i++) {
@@ -93,7 +93,7 @@
 //            }
 //            return sum;
 //        } finally {
-//            semanticLock.unlock(2);
+//            semanticLock.unlock(2, r);
 //        }
 //    }
 //

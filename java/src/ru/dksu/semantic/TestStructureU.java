@@ -65,31 +65,31 @@ public class TestStructureU implements ITestStructure {
 
     @Override
     public void updateRange(int from, int to, int value) {
-        semanticLock.lock(0);
+        int r = semanticLock.lock(0);
         try {
             for (int i = from; i <= to; i++) {
                 elements[i].set(value);
             }
         } finally {
-            semanticLock.unlock(0);
+            semanticLock.unlock(0, r);
         }
     }
 
     @Override
     public void addRange(int from, int to, int add) {
-        semanticLock.lock(1);
+        int r = semanticLock.lock(1);
         try {
             for (int i = from; i <= to; i++) {
                 elements[i].addAndGet(add);
             }
         } finally {
-            semanticLock.unlock(1);
+            semanticLock.unlock(1, r);
         }
     }
 
     @Override
     public int getRangeSum(int from, int to) {
-        semanticLock.lock(2);
+        int r = semanticLock.lock(2);
         int sum = 0;
         try {
             for (int i = from; i <= to; i++) {
@@ -97,7 +97,7 @@ public class TestStructureU implements ITestStructure {
             }
             return sum;
         } finally {
-            semanticLock.unlock(2);
+            semanticLock.unlock(2, r);
         }
     }
 
@@ -110,21 +110,21 @@ public class TestStructureU implements ITestStructure {
 
     @Override
     public int get(int index) {
-        semanticLock.lock(3);
+        int r = semanticLock.lock(3);
         try {
             return elements[index].get();
         } finally {
-            semanticLock.unlock(3);
+            semanticLock.unlock(3, r);
         }
     }
 
     @Override
     public int set(int index, int value) {
-        semanticLock.lock(4);
+        int r = semanticLock.lock(4);
         try {
             return elements[index].getAndSet(value);
         } finally {
-            semanticLock.unlock(4);
+            semanticLock.unlock(4, r);
         }
     }
 

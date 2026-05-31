@@ -186,7 +186,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
 	private transient Object[] _kvs;
 
     public ArrayList<Entry<TypeK, TypeV>> snapshot() {
-        semanticLock.lock(2);
+        int r = semanticLock.lock(2);
         try {
             ArrayList<Entry<TypeK, TypeV>> snapshot = new ArrayList<>();
             for (int i = 0; i < len(_kvs); i++) {
@@ -204,12 +204,12 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
             }
             return snapshot;
         } finally {
-            semanticLock.unlock(2);
+            semanticLock.unlock(2, r);
         }
     }
 
     public Integer sum() {
-        semanticLock.lock(2);
+        int r = semanticLock.lock(2);
         try {
             int s = 0;
             for (int i = 0; i < len(_kvs); i++) {
@@ -227,12 +227,12 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
             }
             return s;
         } finally {
-            semanticLock.unlock(2);
+            semanticLock.unlock(2, r);
         }
     }
 
     public Integer cap(Integer maxValue) {
-        semanticLock.lock(3);
+        int r = semanticLock.lock(3);
         try {
             int s = 0;
             for (int i = 0; i < len(_kvs); i++) {
@@ -253,7 +253,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
             }
             return s;
         } finally {
-            semanticLock.unlock(3);
+            semanticLock.unlock(3, r);
         }
     }
 
@@ -510,11 +510,11 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
 	 */
 	@Override
 	public TypeV put(TypeK key, TypeV val) {
-        semanticLock.lock(1);
+        int r = semanticLock.lock(1);
         try {
             return putIfMatch(key, val, NO_MATCH_OLD);
         } finally {
-            semanticLock.unlock(1);
+            semanticLock.unlock(1, r);
         }
 	}
 
@@ -543,11 +543,11 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
 	 */
 	@Override
 	public TypeV remove(Object key) {
-        semanticLock.lock(1);
+        int r = semanticLock.lock(1);
         try {
             return putIfMatch(key, TOMBSTONE, NO_MATCH_OLD);
         } finally {
-            semanticLock.unlock(1);
+            semanticLock.unlock(1, r);
         }
 	}
 
@@ -754,7 +754,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
 	// Never returns a Prime nor a Tombstone.
 	@Override
 	public TypeV get(Object key) {
-        semanticLock.lock(0);
+        int r = semanticLock.lock(0);
         try {
             final int fullhash = hash(key); // throws NullPointerException if key is
             // null
@@ -762,7 +762,7 @@ public class ExtendedNonBlockingCliffHashMap<TypeK, TypeV> extends
             assert !(V instanceof Prime); // Never return a Prime
             return (TypeV) V;
         } finally {
-            semanticLock.unlock(0);
+            semanticLock.unlock(0, r);
         }
 	}
 
