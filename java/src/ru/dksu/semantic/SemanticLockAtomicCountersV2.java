@@ -5,16 +5,17 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.LongAdder;
 
-public class SemanticLockAtomicCounters {
+public class SemanticLockAtomicCountersV2 {
     int operationsNumber;
     int[][] conflicts;
+    int[][] conflictAddrs;
     boolean[] selfConflict;
     private final int DELTA = 32;
-    private final int K = 8;
 
+    LongAdder[] lockAdder;
     AtomicIntegerArray lockCounts;
 
 //    private static final ConcurrentLinkedQueue<ThreadStatistics> ALL_THREAD_STATISTICS = new ConcurrentLinkedQueue<>();
@@ -24,7 +25,7 @@ public class SemanticLockAtomicCounters {
 //        return statistics;
 //    });
 
-    public SemanticLockAtomicCounters(
+    public SemanticLockAtomicCountersV2(
             int operationsNumber,
             int[][] conflicts
     ) {
@@ -37,7 +38,7 @@ public class SemanticLockAtomicCounters {
 
     public final boolean fairness;
 
-    public SemanticLockAtomicCounters(
+    public SemanticLockAtomicCountersV2(
             int operationsNumber,
             int[][] conflicts,
             boolean fair
@@ -57,17 +58,23 @@ public class SemanticLockAtomicCounters {
         this.operationsNumber = operationsNumber;
         this.conflicts = new int[operationsNumber][];
         this.selfConflict = new boolean[operationsNumber];
+        int selfConflictCount = 0;
 
         for (int i = 0; i < operationsNumber; i++) {
             if (conflicts[i][i] == 1) {
                 this.selfConflict[i] = true;
+                selfConflictCount++;
             } else {
                 this.selfConflict[i] = false;
             }
         }
 
+        this.lockAdder = new LongAdder[operationsNumber * DELTA];
+        this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA);
+
         for (int i = 0; i < operationsNumber; i++) {
             int conflictsCount = 0;
+            int conflictsCountAddr = 0;
             for (int j = 0; j < operationsNumber; j++) {
                 if (i == j)
                     continue;
@@ -75,33 +82,30 @@ public class SemanticLockAtomicCounters {
                     if (selfConflict[j]) {
                         conflictsCount++;
                     } else {
-                        conflictsCount += K;
+                        conflictsCountAddr++;
                     }
                 }
             }
             this.conflicts[i] = new int[conflictsCount];
+            this.conflictAddrs[i] = new int[conflictsCountAddr];
+
             int ind = 0;
+            int indAdd = 0;
             for (int j = 0; j < operationsNumber; j++) {
                 if (i == j) {
                     continue;
                 }
                 if (conflicts[i][j] == 1) {
                     if (selfConflict[j]) {
-                        this.conflicts[i][ind] = j * K;
+                        this.conflicts[i][ind] = j;
                         ind++;
                     } else {
-                        for (int del = 0; del < K; del++) {
-                            this.conflicts[i][ind] = j * K + del;
-                            ind++;
-                        }
+                        this.conflictAddrs[i][indAdd] = j;
+                        indAdd++;
                     }
                 }
             }
         }
-        this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA * K);
-//        for (int i = 0; i < operationsNumber; i++) {
-//            this.lockCounts[i] = new AtomicInteger(0);
-//        }
     }
 
     public int tryLock(int operationNumber) {
@@ -111,7 +115,6 @@ public class SemanticLockAtomicCounters {
         boolean incremented = false;
 
         boolean tSelfConflict = this.selfConflict[operationNumber];
-        int rInd = tSelfConflict ? operationNumber * K * DELTA : (operationNumber * K + ThreadLocalRandom.current().nextInt(K)) * DELTA;
 
         try {
             if (fairness) {
@@ -126,15 +129,20 @@ public class SemanticLockAtomicCounters {
                     return -1;
                 }
             }
+            for (int conflictInd: this.conflictAddrs[operationNumber]) {
+                if (this.lockAdder[conflictInd * DELTA].sum() > 0) {
+                    return -1;
+                }
+            }
 
             if (tSelfConflict) {
-                if (!this.lockCounts.compareAndSet(rInd, 0, 1)) {
+                if (!this.lockCounts.compareAndSet(operationNumber * DELTA, 0, 1)) {
                     return -1;
                 } else {
                     incremented = true;
                 }
             } else {
-                this.lockCounts.incrementAndGet(rInd);
+                this.lockAdder[operationNumber * DELTA].increment();
                 incremented = true;
             }
 
@@ -143,8 +151,19 @@ public class SemanticLockAtomicCounters {
 
             while (!flg) {
                 flg = true;
-                for (int conflictInd : this.conflicts[operationNumber]) {
+                for (int conflictInd: this.conflicts[operationNumber]) {
                     if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+                        if (!tExtra && !extra.compareAndSet(false, true)) {
+                            return -1;
+                        } else {
+                            tExtra = true;
+                            flg = false;
+                            break;
+                        }
+                    }
+                }
+                for (int conflictInd: this.conflictAddrs[operationNumber]) {
+                    if (this.lockAdder[conflictInd * DELTA].sum() > 0) {
                         if (!tExtra && !extra.compareAndSet(false, true)) {
                             return -1;
                         } else {
@@ -167,10 +186,14 @@ public class SemanticLockAtomicCounters {
             if (tExtra) {
                 extra.set(false);
             }
-            return rInd;
+            return 0;
         } finally {
             if (!locked && incremented) {
-                this.lockCounts.decrementAndGet(rInd);
+                if (selfConflict[operationNumber]) {
+                    this.lockCounts.decrementAndGet(operationNumber * DELTA);
+                } else {
+                    this.lockAdder[operationNumber * DELTA].decrement();
+                }
             }
 //            if (incremented) {
 //                THREAD_STATISTICS.get().record(operationNumber, locked, System.nanoTime() - startedAt);
@@ -198,7 +221,11 @@ public class SemanticLockAtomicCounters {
         checkOperationNumber(operationNumber);
 //        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
 //        while (true) {
-        this.lockCounts.decrementAndGet(rInd);
+        if (selfConflict[operationNumber]) {
+            this.lockCounts.decrementAndGet(operationNumber * DELTA);
+        } else {
+            this.lockAdder[operationNumber * DELTA].decrement();
+        }
 //            if (val > 0) {
 //                this.lockCounts.compareAndSet(rInd, val, val-1);
 //                return;
