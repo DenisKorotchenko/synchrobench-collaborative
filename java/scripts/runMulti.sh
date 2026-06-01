@@ -2,8 +2,8 @@
 
 # thread="32"
 # thread="1 4 8"
-size="4194304"
-#size="67108864"
+#size="4194304"
+size="67108864"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -27,7 +27,7 @@ size="4194304"
 # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
-benchs="ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureU ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -106,9 +106,14 @@ distrs=(
 # TEST STRUCTURE
   "0 0 50 50"
   "0 0 0 50"
-  "20 20 20 20"
-  "5 90 5 0"
-  "90 5 5 0"
+#  "20 20 20 20"
+#  "5 90 5 0"
+#  "90 5 5 0"
+  "10 0 40 40"
+  "10 0 10 40"
+  "10 0 30 30"
+  "40 0 20 20"
+  "30 10 20 20"
 )
 
 iterations=5
@@ -167,6 +172,71 @@ for dist in "${distrs[@]}"; do
   done
 done
 
+
+benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
+size="4194304"
+
+distrs=(
+  "40 10 40"
+  "10 10 40"
+  "0 0 50"
+)
+
+iterations=5
+W=5
+d=10000
+
+thread="1"
+count=0
+for dist in "${distrs[@]}"; do
+  for i in ${size}; do
+    for t in ${thread}; do
+      for bench in ${benchs}; do
+        count=$((count+1))
+      done
+    done
+  done
+done
+
+parts=2
+
+part=1
+current=0
+thread="1 2 4 8 15"
+for dist in "${distrs[@]}"; do
+  for i in ${size}; do
+    r=$((i*2))
+    for t in ${thread}; do
+      for bench in ${benchs}; do
+        current=$((current+1))
+        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34-unfair.log
+        date
+        echo "Experiment $current of $((count*5)), part $part / $parts"
+        echo "numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-unfair.csv >> ${out}
+      done
+    done
+  done
+done
+
+part=2
+current=0
+thread="24 31"
+for dist in "${distrs[@]}"; do
+  for i in ${size}; do
+    r=$((i*2))
+    for t in ${thread}; do
+      for bench in ${benchs}; do
+        current=$((current+1))
+        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34-unfair.log
+        date
+        echo "Experiment $current of $((count*2)), part $part / $parts"
+        echo "numactl --physcpubind=0-15,64-79 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        numactl --physcpubind=0-15,64-79 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-unfair.csv >> ${out}
+      done
+    done
+  done
+done
 #
 #part=3
 #current=0
