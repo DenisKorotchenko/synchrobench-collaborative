@@ -25,8 +25,8 @@ size="4194304"
 #benchs="ru.dksu.semantic.TestStructureAF ru.dksu.semantic.TestStructureAU"
 #benchs="ru.dksu.semantic.TestStructureLF ru.dksu.semantic.TestStructureLU"
 # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
-#benchs="ru.dksu.semantic.ExtendedMapSL3_F ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_F ru.dksu.semantic.ExtendedMapSL_U"
-benchs="ru.dksu.semantic.ExtendedMapSL3_U" # ru.dksu.semantic.ExtendedMapSL_U"
+benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
+#benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.TestStructureF ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
@@ -127,30 +127,30 @@ for dist in "${distrs[@]}"; do
   done
 done
 
-parts=2
+parts=4
 
-part=1
-current=0
-thread="1 2 4 8 15"
-for dist in "${distrs[@]}"; do
-  for i in ${size}; do
-    r=$((i*2))
-    for t in ${thread}; do
-      for bench in ${benchs}; do
-        current=$((current+1))
-        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34-unfair.log
-        date
-        echo "Experiment $current of $((count*5)), part $part / $parts"
-        echo "numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
-        numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-unfair.csv >> ${out}
-      done
-    done
-  done
-done
+#part=1
+#current=0
+#thread="1 2 4 8 15"
+#for dist in "${distrs[@]}"; do
+#  for i in ${size}; do
+#    r=$((i*2))
+#    for t in ${thread}; do
+#      for bench in ${benchs}; do
+#        current=$((current+1))
+#        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34-unfair.log
+#        date
+#        echo "Experiment $current of $((count*5)), part $part / $parts"
+#        echo "numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+#        numactl --physcpubind=0-15 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-unfair.csv >> ${out}
+#      done
+#    done
+#  done
+#done
 
 part=2
 current=0
-thread="24 31"
+thread="31"
 for dist in "${distrs[@]}"; do
   for i in ${size}; do
     r=$((i*2))
@@ -160,47 +160,47 @@ for dist in "${distrs[@]}"; do
         out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34-unfair.log
         date
         echo "Experiment $current of $((count*2)), part $part / $parts"
-        echo "numactl --physcpubind=0-15,64-79 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        echo "numactl --physcpubind=0-31 --interleave=0-1 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
         numactl --physcpubind=0-15,64-79 --interleave=0 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-unfair.csv >> ${out}
       done
     done
   done
 done
 
-#part=3
-#current=0
-#thread="47"
-#for dist in "${distrs[@]}"; do
-#  for i in ${size}; do
-#    r=$((i*2))
-#    for t in ${thread}; do
-#      for bench in ${benchs}; do
-#        current=$((current+1))
-#        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
-#        date
-#        echo "Experiment $current of $count, part $part / $parts"
-#        echo "numactl --physcpubind=0-47 --interleave=0-2 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
-#        numactl --physcpubind=0-47 --interleave=0-2 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}
-#      done
-#    done
-#  done
-#done
-#
-#part=4
-#current=0
-#thread="63"
-#for dist in "${distrs[@]}"; do
-#  for i in ${size}; do
-#    r=$((i*2))
-#    for t in ${thread}; do
-#      for bench in ${benchs}; do
-#        current=$((current+1))
-#        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
-#        date
-#        echo "Experiment $current of $count, part $part / $parts"
-#        echo "numactl --physcpubind=0-63 --interleave=0-3 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
-#        numactl --physcpubind=0-63 --interleave=0-3 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}
-#      done
-#    done
-#  done
-#done
+part=3
+current=0
+thread="47"
+for dist in "${distrs[@]}"; do
+  for i in ${size}; do
+    r=$((i*2))
+    for t in ${thread}; do
+      for bench in ${benchs}; do
+        current=$((current+1))
+        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
+        date
+        echo "Experiment $current of $count, part $part / $parts"
+        echo "numactl --physcpubind=0-47 --interleave=0-2 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        numactl --physcpubind=0-47 --interleave=0-2 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}
+      done
+    done
+  done
+done
+
+part=4
+current=0
+thread="63"
+for dist in "${distrs[@]}"; do
+  for i in ${size}; do
+    r=$((i*2))
+    for t in ${thread}; do
+      for bench in ${benchs}; do
+        current=$((current+1))
+        out=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/log/290126/${bench}-size-${i}-threads-${t}-33-33-34.log
+        date
+        echo "Experiment $current of $count, part $part / $parts"
+        echo "numactl --physcpubind=0-63 --interleave=0-3 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution ${dist} --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}"
+        numactl --physcpubind=0-63 --interleave=0-3 java -server -cp ../lib/compositional-deucestm-0.1.jar:../lib/mydeuce.jar:../bin contention.benchmark.Test -W ${W} -a 0 -d ${d} -t ${t} -i ${i} -r ${r} -n ${iterations} -b ${bench} --distribution "${dist}" --csvPath /home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res.csv >> ${out}
+      done
+    done
+  done
+done
