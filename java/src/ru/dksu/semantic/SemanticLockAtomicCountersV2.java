@@ -3,7 +3,6 @@ package ru.dksu.semantic;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.LongAdder;
@@ -57,19 +56,21 @@ public class SemanticLockAtomicCountersV2 {
         }
         this.operationsNumber = operationsNumber;
         this.conflicts = new int[operationsNumber][];
+        this.conflictAddrs = new int[operationsNumber][];
         this.selfConflict = new boolean[operationsNumber];
-        int selfConflictCount = 0;
 
         for (int i = 0; i < operationsNumber; i++) {
             if (conflicts[i][i] == 1) {
                 this.selfConflict[i] = true;
-                selfConflictCount++;
             } else {
                 this.selfConflict[i] = false;
             }
         }
 
         this.lockAdder = new LongAdder[operationsNumber * DELTA];
+        for (int i = 0; i < operationsNumber * DELTA; i+=DELTA) {
+            this.lockAdder[i] = new LongAdder();
+        }
         this.lockCounts = new AtomicIntegerArray(operationsNumber * DELTA);
 
         for (int i = 0; i < operationsNumber; i++) {
