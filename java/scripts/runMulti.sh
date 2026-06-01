@@ -29,7 +29,7 @@ size="4194304"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.TestStructureF ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
-benchs = "ru.dksu.semantic.ExtendedMapSL3_U"
+benchs="ru.dksu.semantic.ExtendedMapSL3_U"
 
 distrs=(
 #  "49 49 2"
