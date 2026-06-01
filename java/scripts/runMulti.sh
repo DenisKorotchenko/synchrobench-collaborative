@@ -26,10 +26,9 @@ size="4194304"
 #benchs="ru.dksu.semantic.TestStructureLF ru.dksu.semantic.TestStructureLU"
 # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
-#benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
+benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.TestStructureF ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
-benchs="ru.dksu.semantic.ExtendedMapSL3_U"
 
 distrs=(
 #  "49 49 2"
@@ -98,11 +97,11 @@ distrs=(
 # MAP
 
   "50 50 0"
-#  "50 0 50"
-#  "25 25 25"
-#  "5 5 80"
-#  "10 40 40"
-#  "40 40 10"
+  "50 0 50"
+  "25 25 25"
+  "5 5 80"
+  "10 40 40"
+  "40 40 10"
 
 # TEST STRUCTURE
 #  "0 0 50 50"
