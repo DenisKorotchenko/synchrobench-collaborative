@@ -33,7 +33,7 @@ public class SemanticLockAtomicCounters {
                 false);
     }
 
-//    private final AtomicBoolean extra = new AtomicBoolean(false);
+    private final AtomicBoolean extra = new AtomicBoolean(false);
 
     public final boolean fairness;
 
@@ -116,7 +116,7 @@ public class SemanticLockAtomicCounters {
         try {
             if (fairness) {
                 Long firstThreadId = threadsQueue.peek();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
                     return -1;
                 }
             }
@@ -139,22 +139,22 @@ public class SemanticLockAtomicCounters {
             }
 
             boolean flg = false;
-//            boolean tExtra = false;
+            boolean tExtra = false;
 
-//            while (!flg) {
-//                flg = true;
-//                for (int conflictInd : this.conflicts[operationNumber]) {
-//                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
-//                        if (!tExtra && !extra.compareAndSet(false, true)) {
-//                            return false;
-//                        } else {
-//                            tExtra = true;
-//                            flg = false;
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
+            while (!flg) {
+                flg = true;
+                for (int conflictInd : this.conflicts[operationNumber]) {
+                    if (this.lockCounts.get(conflictInd * DELTA) > 0) {
+                        if (!tExtra && !extra.compareAndSet(false, true)) {
+                            return -1;
+                        } else {
+                            tExtra = true;
+                            flg = false;
+                            break;
+                        }
+                    }
+                }
+            }
             for (int conflictInd: this.conflicts[operationNumber]) {
                 if (this.lockCounts.get(conflictInd * DELTA) > 0) {
                     return -1;
@@ -163,15 +163,15 @@ public class SemanticLockAtomicCounters {
 
             if (fairness) {
                 Long firstThreadId = threadsQueue.poll();
-                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().threadId()) {
+                if (firstThreadId == null || firstThreadId.longValue() != Thread.currentThread().getId()) {
                     System.err.println("Thread is wrong!");
                     throw new RuntimeException("Thread is wrong");
                 }
             }
             locked = true;
-//            if (tExtra) {
-//                extra.set(false);
-//            }
+            if (tExtra) {
+                extra.set(false);
+            }
             return rInd;
         } finally {
             if (!locked && incremented) {
@@ -198,18 +198,17 @@ public class SemanticLockAtomicCounters {
             Thread.yield();
         }
     }
-    
+
     public void unlock(int operationNumber, int rInd) {
         checkOperationNumber(operationNumber);
 //        int value = this.lockCounts.decrementAndGet(operationNumber * DELTA);
-        while (true) {
-            int t = rInd;
-            int val = this.lockCounts.get(t);
-            if (val > 0) {
-                this.lockCounts.compareAndSet(t, val, val-1);
-                return;
-            }
-        }
+//        while (true) {
+        this.lockCounts.decrementAndGet(rInd);
+//            if (val > 0) {
+//                this.lockCounts.compareAndSet(rInd, val, val-1);
+//                return;
+//            }
+//        }
 //        int value = this.lockCounts.decrementAndGet((operationNumber * K + random.nextInt(K)) * DELTA);
 //        if (value < 0) {
 //            this.lockCounts.incrementAndGet(operationNumber * DELTA);
