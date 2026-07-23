@@ -2,8 +2,8 @@
 
 # thread="32"
 # thread="1 4 8"
-#size="4194304"
-size="67108864"
+size="4194304"
+#size="67108864"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -27,7 +27,8 @@ size="67108864"
 # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureSimple ru.dksu.semantic.TestStructureWithout"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
-benchs="ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.ExtendedMapSLGME"
+#benchs="ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -96,21 +97,26 @@ distrs=(
 
 # MAP
 
-#  "50 50 0"
-#  "50 0 50"
-#  "25 25 25"
-#  "5 5 80"
+  "50 50 0"
+  "50 0 50"
+  "25 25 25"
+  "5 5 80"
+  "10 40 45"
+  "40 10 40"
 #  "10 40 40"
 #  "40 40 10"
 
 # TEST STRUCTURE
-  "0 0 50 50"
-  "0 0 0 50"
-  "20 20 20 20"
-#  "5 90 5 0"
-  "10 0 40 40"
-  "10 0 10 40"
-  "90 5 5 0"
+#  "0 0 50 50"
+#  "0 0 0 50"
+#  "20 20 20 20"
+
+#  "10 0 40 40"
+#  "10 0 10 40"
+#  "90 5 5 0"
+
+  #  "5 90 5 0"
+
 #  "10 0 30 30"
 #  "40 0 20 20"
 #  "30 10 20 20"
