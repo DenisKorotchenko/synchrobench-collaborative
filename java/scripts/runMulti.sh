@@ -2,8 +2,8 @@
 
 # thread="32"
 # thread="1 4 8"
-size="4194304"
-#size="67108864"
+#size="4194304"
+size="67108864"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -28,8 +28,9 @@ size="4194304"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSLGMER"
-benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
+#benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureGME ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -105,25 +106,26 @@ distrs=(
 #  "10 40 45"
 #  "40 10 40"
 
-  "45 5 45"
-  "35 15 35"
-  "30 20 30"
-  "20 30 20"
-  "15 35 15"
-  "10 40 10"
-  "5 45 5"
-  "0 50 0"
+#  "45 5 45"
+#  "35 15 35"
+#  "30 20 30"
+#  "20 30 20"
+#  "15 35 15"
+#  "10 40 10"
+#  "5 45 5"
+#  "0 50 0"
+
 #  "10 40 40"
 #  "40 40 10"
 
 # TEST STRUCTURE
-#  "0 0 50 50"
-#  "0 0 0 50"
-#  "20 20 20 20"
+  "0 0 50 50"
+  "0 0 0 50"
+  "20 20 20 20"
 
-#  "10 0 40 40"
-#  "10 0 10 40"
-#  "90 5 5 0"
+  "10 0 40 40"
+  "10 0 10 40"
+  "90 5 5 0"
 
   #  "5 90 5 0"
 
