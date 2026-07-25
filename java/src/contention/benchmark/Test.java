@@ -1478,26 +1478,6 @@ public class Test {
             sum /= n;
         }
 		System.out.println("  Total throughput (mebiops/s): " + sum);
-		try (FileWriter csvWriter = new FileWriter(Parameters.csvPath, true)) {
-            csvWriter
-					.append(String.valueOf(Parameters.benchClassName))
-					.append(",")
-					.append(String.valueOf(Parameters.size))
-					.append(",")
-					.append(String.valueOf(Parameters.numThreads))
-					.append(",")
-					.append(String.join(":", Arrays.stream(Parameters.distribution).map(Object::toString).toList()))
-                    //String.valueOf(Parameters.distribution[0]) + ":" + String.valueOf(Parameters.distribution[1]) + ":" + String.valueOf(Parameters.distribution[2]))
-					.append(",")
-					// .append(String.valueOf(Parameters.numWrites))
-					// .append(",")
-					// .append(String.valueOf(Parameters.numWriteAlls))
-					// .append(",")
-					.append(formatDouble(sum * 1024))
-					.append("\n");
-		} catch (IOException e) {
-			System.out.println(e.getMessage());
-		}
         double mean = sum;
 		System.out.println("  |--Mean:                    \t" + mean);
 		double temp = 0;
@@ -1512,6 +1492,28 @@ public class Test {
 		double sterr = stdevp / java.lang.Math.sqrt(n);
 		System.out.println("  |--Standard error:          \t" + sterr);
 		System.out.println("  |--Margin of error (95% CL):\t" + (sterr * 1.96));
+        try (FileWriter csvWriter = new FileWriter(Parameters.csvPath, true)) {
+            csvWriter
+                    .append(String.valueOf(Parameters.benchClassName))
+                    .append(",")
+                    .append(String.valueOf(Parameters.size))
+                    .append(",")
+                    .append(String.valueOf(Parameters.numThreads))
+                    .append(",")
+                    .append(String.join(":", Arrays.stream(Parameters.distribution).map(Object::toString).toList()))
+                    //String.valueOf(Parameters.distribution[0]) + ":" + String.valueOf(Parameters.distribution[1]) + ":" + String.valueOf(Parameters.distribution[2]))
+                    .append(",")
+                    // .append(String.valueOf(Parameters.numWrites))
+                    // .append(",")
+                    // .append(String.valueOf(Parameters.numWriteAlls))
+                    // .append(",")
+                    .append(formatDouble(sum * 1024))
+                    .append(",")
+                    .append(formatDouble(sterr * 1000))
+                    .append("\n");
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
 	}
 
 	private static String formatDouble(double result) {
