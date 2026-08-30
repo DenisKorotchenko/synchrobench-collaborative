@@ -139,7 +139,7 @@ distrs=(
 
 iterations=5
 W=5
-d=100000
+d=15000
 
 csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-0.csv
 
