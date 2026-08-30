@@ -1470,19 +1470,19 @@ public class Test {
 			sum += ((throughput[i]/1024));
             throughputs[i] = throughput[i] / 1024;
 		}
-        if (n >= 5 && n < 8) {
+        if (n >= 600 && n < 8) {
             sum = Arrays.stream(throughputs).sorted().skip(1).limit(throughputs.length-2).average().getAsDouble();
-        } else if (n >= 8) {
+        } else if (n >= 800) {
             sum = Arrays.stream(throughputs).sorted().skip(2).limit(throughputs.length-4).average().getAsDouble();
         } else {
             sum /= n;
         }
 		System.out.println("  Total throughput (mebiops/s): " + sum);
-        double mean = sum;
+        double mean = sum * 1024;
 		System.out.println("  |--Mean:                    \t" + mean);
 		double temp = 0;
 		for (int i = 0; i < n; i++) {
-			double diff = ((throughput[i]/1024)/1024) - mean;
+			double diff = throughput[i] - mean;
 			temp += diff * diff;
 		}
 		double var = temp / n;
@@ -1507,9 +1507,9 @@ public class Test {
                     // .append(",")
                     // .append(String.valueOf(Parameters.numWriteAlls))
                     // .append(",")
-                    .append(formatDouble(sum * 1024))
+                    .append(formatDouble(mean))
                     .append(",")
-                    .append(formatDouble(sterr * 1000))
+                    .append(formatDouble(sterr))
                     .append("\n");
         } catch (IOException e) {
             System.out.println(e.getMessage());

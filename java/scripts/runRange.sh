@@ -3,7 +3,7 @@
 # thread="32"
 # thread="1 4 8"
 #size="4194304"
-size="67108864"
+size="67108864 10000"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -29,7 +29,7 @@ size="67108864"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
-benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3 ru.dksu.semantic.TestStructureRangeU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="ru.dksu.semantic.TestStructureGME ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
@@ -121,14 +121,12 @@ distrs=(
 #  "40 40 10"
 
 # TEST STRUCTURE
-#  "0 0 50 50"
+  "0 0 50 50"
   "0 0 0 50"
   "20 20 20 20"
-  "33 33 34 0"
-#
-#  "10 0 40 40"
-#  "10 0 10 40"
-#  "90 5 5 0"
+  "10 0 40 40"
+  "10 0 10 40"
+  "90 5 5 0"
 
   #  "5 90 5 0"
 
@@ -139,7 +137,7 @@ distrs=(
 
 iterations=5
 W=5
-d=15000
+d=12000
 
 csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-0.csv
 
