@@ -29,8 +29,8 @@ size="67108864 10000"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapSL_U"
 #benchs="ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
-benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3 ru.dksu.semantic.TestStructureRangeU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
-#benchs="ru.dksu.semantic.TestStructureGME ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+#benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3 ru.dksu.semantic.TestStructureRangeU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
