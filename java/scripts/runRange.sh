@@ -139,7 +139,7 @@ iterations=5
 W=5
 d=12000
 
-csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-0.csv
+csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-1.csv
 
 thread="1"
 count=0
