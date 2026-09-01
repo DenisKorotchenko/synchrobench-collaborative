@@ -88,6 +88,8 @@ public class TestThreadLoop implements Runnable {
 		System.out.println(bench.toString());
 	}
 
+	private int rangeLen = 100000;
+
 	public void run() {
 
 		while (!stop) {
@@ -95,7 +97,7 @@ public class TestThreadLoop implements Runnable {
 			int coin = rand.nextInt(1000);
 			if (coin < cdf[0]) { // 1. addRange
 				// int newInt2 = newInt + 128;
-				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + rangeLen));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;
@@ -110,7 +112,7 @@ public class TestThreadLoop implements Runnable {
 				}
 			} else if (coin < cdf[1]) { // 2. updateRange
 				// int newInt2 = newInt + 128;
-				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + rangeLen));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;
@@ -125,7 +127,7 @@ public class TestThreadLoop implements Runnable {
 				}
 			} else if (coin < cdf[2]){ // 3. getRange
 				// int newInt2 = newInt + 128;
-				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + 10000));
+				int newInt2 = rand.nextInt(newInt, Math.min(Parameters.range, newInt + rangeLen));
 				if (newInt > newInt2) {
 					int temp = newInt;
 					newInt = newInt2;

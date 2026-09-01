@@ -30,7 +30,7 @@ size="67108864"
 #benchs="ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3 ru.dksu.semantic.TestStructureRangeU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
-benchs="ru.dksu.semantic.TestStructureKoganRWRange" # ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureKoganRWRange ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -124,8 +124,8 @@ distrs=(
   "0 0 50 50"
   "0 0 0 50"
   "20 20 20 20"
-#  "10 0 40 40"
-#  "10 0 10 40"
+  "10 0 40 40"
+  "10 0 10 40"
   "90 5 5 0"
 
   #  "5 90 5 0"
@@ -139,7 +139,7 @@ iterations=5
 W=5
 d=12000
 
-csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-2.csv
+csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-3.csv
 
 thread="1"
 count=0
