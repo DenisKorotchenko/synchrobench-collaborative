@@ -121,12 +121,17 @@ distrs=(
 #  "40 40 10"
 
 # TEST STRUCTURE
-  "0 0 50 50"
-  "0 0 0 50"
-  "20 20 20 20"
-  "10 0 40 40"
-  "10 0 10 40"
-  "90 5 5 0"
+#  "0 0 50 50"
+#  "0 0 0 50"
+#  "20 20 20 20"
+#  "10 0 40 40"
+#  "10 0 10 40"
+#  "90 5 5 0"
+  "100 0 0 0"
+  "0 100 0 0"
+  "0 0 100 0"
+  "0 0 0 100"
+  "0 0 0 0"
 
   #  "5 90 5 0"
 
@@ -139,7 +144,7 @@ iterations=5
 W=5
 d=12000
 
-csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-3.csv
+csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-4.csv
 
 thread="1"
 count=0
