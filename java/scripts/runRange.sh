@@ -3,7 +3,7 @@
 # thread="32"
 # thread="1 4 8"
 #size="4194304"
-size="67108864"
+size="1048576"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -130,8 +130,8 @@ distrs=(
   "100 0 0 0"
   "0 100 0 0"
   "0 0 100 0"
-  "0 0 0 100"
-  "0 0 0 0"
+#  "0 0 0 100"
+#  "0 0 0 0"
 
   #  "5 90 5 0"
 
@@ -144,7 +144,7 @@ iterations=5
 W=5
 d=12000
 
-csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-4.csv
+csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-5.csv
 
 thread="1"
 count=0
