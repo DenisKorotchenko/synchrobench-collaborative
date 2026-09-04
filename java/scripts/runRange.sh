@@ -3,7 +3,8 @@
 # thread="32"
 # thread="1 4 8"
 #size="4194304"
-size="1048576"
+#size="1048576"
+size="67108864"
 #size="8192"
 
 #writes="0 20 50 100"
@@ -30,7 +31,8 @@ size="1048576"
 #benchs="ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.ExtendedMapSL3_U ru.dksu.semantic.ExtendedMapNoLock ru.dksu.semantic.ExtendedMapRW ru.dksu.semantic.ExtendedMapSL_U ru.dksu.semantic.ExtendedMapSLGME ru.dksu.semantic.ExtendedMapSLGMER"
 #benchs="ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureRangeV3 ru.dksu.semantic.TestStructureRangeU" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
-benchs="ru.dksu.semantic.TestStructureKoganRWRange ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+#benchs="ru.dksu.semantic.TestStructureKoganRWRange ru.dksu.semantic.TestStructureRangeV2 ru.dksu.semantic.TestStructureU" # ru.dksu.semantic.TestStructureGMER" # ru.dksu.semantic.TestStructureRW ru.dksu.semantic.TestStructureWithout"
+benchs="ru.dksu.semantic.TestStructureWithout"
 #benchs="trees.lockbased.IntegerCollaborativeHelperFairLockBasedStanfordTreeMap trees.lockbased.IntegerLockBasedStanfordTreeMap"
 
 distrs=(
@@ -144,7 +146,7 @@ iterations=5
 W=5
 d=12000
 
-csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-5.csv
+csv=/home/dkorotchenko/collaborative-operations/synchrobench-collaborative/java/output/res-range-6.csv
 
 thread="1"
 count=0

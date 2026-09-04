@@ -1,14 +1,23 @@
 package ru.dksu.semantic;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TestStructureRangeV3 implements ITestStructure {
+public class TestStructureRangeV3 implements ITestStructure, LockModeTelemetryProvider {
+    private static final String[] OPERATION_NAMES = {
+            "updateRange",
+            "addRange",
+            "getRangeSum",
+            "get",
+            "set"
+    };
+
     AtomicInteger[] elements;
 
     private final int size;
     private final int MULTIPLICATOR = 10;
 
-    ISemanticLockRange semanticLock = new SemanticLockRangeV3(5,
+    private final SemanticLockRangeV3 semanticLock = new SemanticLockRangeV3(5,
             // updateRange, addRange, getRangeSum, get, set
             new int[][] {
                     {1, 1, 1, 1, 1},
@@ -100,6 +109,34 @@ public class TestStructureRangeV3 implements ITestStructure {
         } finally {
             semanticLock.unlock(r);
         }
+    }
+
+    @Override
+    public void startLockModeTelemetry() {
+        semanticLock.startLockModeTelemetry();
+    }
+
+    @Override
+    public void stopLockModeTelemetry() {
+        semanticLock.stopLockModeTelemetry();
+    }
+
+    @Override
+    public LockModeSnapshot lockModeSnapshot() {
+        return semanticLock.lockModeSnapshot();
+    }
+
+    @Override
+    public List<LockModeTransitionEvent> drainLockModeTransitionEvents() {
+        return semanticLock.drainLockModeTransitionEvents();
+    }
+
+    @Override
+    public String lockOperationName(int operationNumber) {
+        if (operationNumber < 0 || operationNumber >= OPERATION_NAMES.length) {
+            return Integer.toString(operationNumber);
+        }
+        return OPERATION_NAMES[operationNumber];
     }
 
 //    @Override

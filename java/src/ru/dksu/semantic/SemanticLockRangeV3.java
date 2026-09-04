@@ -1,9 +1,13 @@
 package ru.dksu.semantic;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -11,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * coarse mode and switches to range-aware reservations when operation-level
  * conflicts persist.
  */
-public class SemanticLockRangeV3 implements ISemanticLockRange {
+public class SemanticLockRangeV3 implements ISemanticLockRange, LockModeTelemetryProvider {
     private static final int COARSE_ACQUIRED = 0;
     private static final int COARSE_RETRY = -1;
 
@@ -58,6 +62,17 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
      * serialized by operation type.
      */
     private final AtomicInteger preciseSuccessesWithoutBenefit = new AtomicInteger();
+
+    /**
+     * Telemetry is disabled outside measured benchmark iterations. No event is
+     * allocated on the ordinary lock/unlock paths; only a successful mode
+     * transition emits one record.
+     */
+    private final ConcurrentLinkedQueue<LockModeTransitionEvent> modeTransitionEvents =
+            new ConcurrentLinkedQueue<>();
+    private final AtomicLong modeTransitionSequence = new AtomicLong();
+    private final AtomicLong completedModeTransitionSequence = new AtomicLong();
+    private volatile boolean modeTelemetryEnabled;
 
     public final boolean fairness;
 
@@ -125,7 +140,7 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
 
                 coarseFailures++;
                 if (coarseFailures >= COARSE_FAILURES_BEFORE_PRECISE) {
-                    requestPreciseMode();
+                    requestPreciseMode(operationNumber, coarseFailures);
                     coarseFailures = 0;
                 } else {
                     Thread.yield();
@@ -134,9 +149,10 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
             }
 
             if (currentMode == Mode.PRECISE) {
-                if (preciseSuccessesWithoutBenefit.get()
+                int successesWithoutBenefit = preciseSuccessesWithoutBenefit.get();
+                if (successesWithoutBenefit
                         >= PRECISE_SUCCESSES_WITHOUT_BENEFIT_BEFORE_COARSE) {
-                    requestCoarseMode();
+                    requestCoarseMode(operationNumber, successesWithoutBenefit);
                     coarseFailures = 0;
                     continue;
                 }
@@ -343,10 +359,16 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
         return false;
     }
 
-    private void requestPreciseMode() {
+    private void requestPreciseMode(int operationNumber, int coarseFailures) {
         if (!mode.compareAndSet(Mode.COARSE, Mode.TO_PRECISE)) {
             return;
         }
+
+        boolean captureTelemetry = modeTelemetryEnabled;
+        long transitionSequence = captureTelemetry
+                ? modeTransitionSequence.incrementAndGet()
+                : 0L;
+        long transitionStartedNanos = captureTelemetry ? System.nanoTime() : 0L;
 
         // Admission is already closed by TO_PRECISE. The per-operation
         // counters used by the coarse lock are also the exact in-flight
@@ -358,6 +380,20 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
 
         preciseSuccessesWithoutBenefit.set(0);
         mode.set(Mode.PRECISE);
+
+        if (captureTelemetry) {
+            recordModeTransition(
+                    transitionSequence,
+                    transitionStartedNanos,
+                    Mode.COARSE,
+                    Mode.TO_PRECISE,
+                    Mode.PRECISE,
+                    "COARSE_RETRY_STREAK",
+                    operationNumber,
+                    coarseFailures,
+                    COARSE_FAILURES_BEFORE_PRECISE,
+                    0);
+        }
     }
 
     private boolean coarseModeIsQuiescent() {
@@ -376,10 +412,17 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
         return true;
     }
 
-    private void requestCoarseMode() {
+    private void requestCoarseMode(int operationNumber, int successesWithoutBenefit) {
         if (!mode.compareAndSet(Mode.PRECISE, Mode.TO_COARSE)) {
             return;
         }
+
+        boolean captureTelemetry = modeTelemetryEnabled;
+        long transitionSequence = captureTelemetry
+                ? modeTransitionSequence.incrementAndGet()
+                : 0L;
+        long transitionStartedNanos = captureTelemetry ? System.nanoTime() : 0L;
+        int participantsAtStart = captureTelemetry ? preciseParticipants.get() : 0;
 
         while (preciseParticipants.get() != 0) {
             Thread.yield();
@@ -387,6 +430,84 @@ public class SemanticLockRangeV3 implements ISemanticLockRange {
 
         preciseSuccessesWithoutBenefit.set(0);
         mode.set(Mode.COARSE);
+
+        if (captureTelemetry) {
+            recordModeTransition(
+                    transitionSequence,
+                    transitionStartedNanos,
+                    Mode.PRECISE,
+                    Mode.TO_COARSE,
+                    Mode.COARSE,
+                    "PRECISE_WITHOUT_BENEFIT_STREAK",
+                    operationNumber,
+                    successesWithoutBenefit,
+                    PRECISE_SUCCESSES_WITHOUT_BENEFIT_BEFORE_COARSE,
+                    participantsAtStart);
+        }
+    }
+
+    private void recordModeTransition(
+            long sequence,
+            long startedNanos,
+            Mode fromMode,
+            Mode transitionMode,
+            Mode toMode,
+            String reason,
+            int triggerOperationNumber,
+            long triggerValue,
+            long threshold,
+            int preciseParticipantsAtStart
+    ) {
+        long completedNanos = System.nanoTime();
+        modeTransitionEvents.add(new LockModeTransitionEvent(
+                sequence,
+                startedNanos,
+                completedNanos,
+                fromMode.name(),
+                transitionMode.name(),
+                toMode.name(),
+                reason,
+                triggerOperationNumber,
+                triggerValue,
+                threshold,
+                preciseParticipantsAtStart));
+        completedModeTransitionSequence.accumulateAndGet(sequence, Math::max);
+    }
+
+    @Override
+    public void startLockModeTelemetry() {
+        modeTransitionEvents.clear();
+        modeTransitionSequence.set(0L);
+        completedModeTransitionSequence.set(0L);
+        modeTelemetryEnabled = true;
+    }
+
+    @Override
+    public void stopLockModeTelemetry() {
+        modeTelemetryEnabled = false;
+    }
+
+    @Override
+    public LockModeSnapshot lockModeSnapshot() {
+        return new LockModeSnapshot(
+                mode.get().name(),
+                completedModeTransitionSequence.get(),
+                preciseParticipants.get(),
+                preciseSuccessesWithoutBenefit.get());
+    }
+
+    @Override
+    public List<LockModeTransitionEvent> drainLockModeTransitionEvents() {
+        List<LockModeTransitionEvent> result = new ArrayList<>();
+        while (true) {
+            LockModeTransitionEvent event = modeTransitionEvents.poll();
+            if (event == null) {
+                break;
+            }
+            result.add(event);
+        }
+        result.sort((left, right) -> Long.compare(left.sequence(), right.sequence()));
+        return result;
     }
 
     private SLOp coarseSLOp(
